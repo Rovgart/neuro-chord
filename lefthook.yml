@@ -1,0 +1,15 @@
+# lefthook.yml
+
+pre-commit:
+  parallel: true # Odpalaj komendy równolegle, jeśli dodasz ich więcej
+  commands:
+    check:
+      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
+      run: bunx @biomejs/biome check --apply --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      stage_fixed: true
+
+pre-push:
+  commands:
+    check:
+      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
+      run: bunx @biomejs/biome check --no-errors-on-unmatched --files-ignore-unknown=true {push_files}

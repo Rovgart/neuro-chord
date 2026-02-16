@@ -1,0 +1,51 @@
+# --- System Files ---
+.DS_Store
+Thumbs.db
+*.log
+
+# --- Dependencies ---
+node_modules/
+# Bun lockfile (binarny, zazwyczaj się go pushuje, 
+# ale jeśli wolisz trzymać tylko package.json, odkomentuj poniżej)
+# bun.lockb
+
+# --- Environment & Secrets ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Pliki zapasowe env
+*.env.bak
+
+# --- NestJS / Backend ---
+/dist
+/apps/backend/dist
+/apps/backend/prisma/migrations/lock.prisma
+# Jeśli używasz symlinków do .env, to ignorujemy je też w podfolderach
+/apps/backend/.env
+
+# --- React Native / Expo ---
+.expo/
+/apps/mobile/dist
+/apps/mobile/web-build
+/apps/mobile/node_modules
+
+# Native builds (iOS/Android)
+/apps/mobile/ios/
+/apps/mobile/android/
+
+# --- Prisma ---
+/prisma/client
+/apps/backend/prisma/client
+
+# --- Tools & IDE ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.serverless/
+.terraform/
+/coverage
+
+# --- Docker ---
+.docker/
