@@ -5,11 +5,6 @@ Thumbs.db
 
 # --- Dependencies ---
 node_modules/
-# Bun lockfile (binarny, zazwyczaj się go pushuje, 
-# ale jeśli wolisz trzymać tylko package.json, odkomentuj poniżej)
-# bun.lockb
-
-# --- Environment & Secrets ---
 .env
 .env.local
 .env.development.local
