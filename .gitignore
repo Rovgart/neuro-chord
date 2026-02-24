@@ -44,3 +44,10 @@ node_modules/
 
 # --- Docker ---
 .docker/
+
+.DS_Store
+*.swp
+data/
+pg_data/
+mongo_data/
+prometheus/data
