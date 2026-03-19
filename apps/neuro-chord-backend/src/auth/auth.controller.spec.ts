@@ -1,7 +1,7 @@
-import { JwtService } from '@nestjs/jwt';
-import { Test, TestingModule } from '@nestjs/testing';
-import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
-import { PrismaService } from 'src/prisma/prisma.service';
+import type { JwtService } from '@nestjs/jwt';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { type DeepMockProxy, mockDeep } from 'jest-mock-extended';
+import type { PrismaService } from 'src/prisma/prisma.service';
 import { UsersService } from 'src/users/users.service';
 import { AuthController } from './auth.controller';
 import { AuthGuard } from './guards/auth.guard';
@@ -65,7 +65,7 @@ describe('AuthController', () => {
       accessToken: 'asdfdsaf12wd',
     };
     mockUsersService.loginUser.mockResolvedValue(mockResponse);
-    const result = await controller.login(mockBody);
+    const result = controller.login(req, res, userData);
     expect(mockUsersService.loginUser).toHaveBeenCalledWith(mockBody);
     expect(result).toEqual(mockResponse);
   });

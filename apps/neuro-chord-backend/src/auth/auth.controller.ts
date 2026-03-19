@@ -5,15 +5,15 @@ import {
   HttpStatus,
   Post,
   Req,
-  Request,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { CreateProfileDto } from 'src/users/dto/create-profile-dto';
-import { LoginUserDto } from 'src/users/dto/login-user-dto';
-import { RegisterUserDto } from 'src/users/dto/register-user.dto';
-import { UsersService } from 'src/users/users.service';
+import { Request } from 'express';
+import type { CreateProfileDto } from 'src/users/dto/create-profile-dto';
+import type { LoginUserDto } from 'src/users/dto/login-user-dto';
+import type { RegisterUserDto } from 'src/users/dto/register-user.dto';
+import type { UsersService } from 'src/users/users.service';
 import { AuthGuard } from './guards/auth.guard';
 import { GoogleOAuthGuard } from './guards/google-oauth.guard';
 @Controller('auth')
@@ -27,8 +27,8 @@ export class AuthController {
 
   @Post('login')
   async login(
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
     @Body() userData: LoginUserDto,
   ) {
     const userAgent = req.headers['user-agent'] || 'unknown';

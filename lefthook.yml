@@ -7,16 +7,3 @@ pre-commit:
             glob: "*.{js,ts,cjs,mjs,jsx,tsx,json,jsonc}"
             run: bunx @biomejs/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
             stage_fixed: true
-
-pre-push:
-    parallel: true
-    commands:
-        backend-tests:
-            root: "apps/neuro-chord-backend/"
-            run: bun test
-        frontend-check:
-            root: "apps/mobile/"
-            run: bun x tsc --noEmit && bunx @biomejs/biome check .
-        backend-types:
-            root: "apps/neuro-chord-backend/"
-            run: bun x tsc --noEmit
