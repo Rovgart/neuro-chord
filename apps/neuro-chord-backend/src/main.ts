@@ -4,7 +4,6 @@ import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = new DocumentBuilder()
@@ -25,6 +24,7 @@ async function bootstrap() {
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
+  app.enableCors();
   app.use(cookieParser());
   app.useLogger(app.get(Logger));
   await app.listen(process.env.PORT ?? 3000);
