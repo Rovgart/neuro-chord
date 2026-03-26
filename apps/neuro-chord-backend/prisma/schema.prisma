@@ -20,6 +20,7 @@ model User {
   chats Chat[] @relation("UserChats")
   messages Message[]
   sessions Session[]
+  passwordReset PasswordReset?
 }
 model Account {
   id String @id @default(cuid())
@@ -124,6 +125,17 @@ model Campaign {
   campaign String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model PasswordReset{
+  id String @id @default(cuid())
+  email String @unique
+  token String @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String @map("user_id")      @unique // @unique wymusza 1:1 (jeden aktywny reset na usera)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
 }
 
 enum Role{

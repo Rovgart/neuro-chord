@@ -1,7 +1,7 @@
 import { ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Test, TestingModule } from '@nestjs/testing';
-import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { type DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { Role } from 'src/generated/prisma/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UsersService } from './users.service';
@@ -38,9 +38,7 @@ describe('UsersService', () => {
       updatedAt: new Date(),
     });
 
-    await expect(service.registerUser(registerDto as any)).rejects.toThrow(
-      ConflictException,
-    );
+    await expect(service.registerUser(registerDto as any)).rejects.toThrow(ConflictException);
   });
   it('should create a user on success', async () => {
     const registerDto = { email: 'new@wp.pl', password: 'password123' };

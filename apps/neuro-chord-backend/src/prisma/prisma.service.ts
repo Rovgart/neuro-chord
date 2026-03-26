@@ -7,18 +7,14 @@ import { Pool } from 'pg';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
-    // 1. Upewnij się, że zmienne środowiskowe są załadowane
     dotenv.config();
 
-    // 2. Stwórz Pool z biblioteki 'pg'
     const pool = new Pool({
       connectionString: process.env.POSTGRES_DB_URL,
     });
 
-    // 3. Przekaż Pool do adaptera Prismy
     const adapter = new PrismaPg(pool);
 
-    // 4. Przekaż adapter do konstruktora PrismaClient
     super({ adapter });
   }
 

@@ -1,10 +1,11 @@
-import { UnauthorizedException } from '@nestjs/common';
+/** biome-ignore-all lint/style/useImportType: <explanation> */
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { RedisService } from 'src/redis/redis.service';
 
+@Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  // Checks blacklist in Redis before validating the token
   constructor(private readonly redisService: RedisService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -14,7 +15,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
   async validate(req: any, payload: any) {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      throw new UnauthorizedException('Missing authorization header');
+    }
+    const token = authHeader.split(' ')[1];
     const isBlacklisted = await this.redisService.get(`bl:${token}`);
     if (isBlacklisted) {
       throw new UnauthorizedException('This token is blacklisted');

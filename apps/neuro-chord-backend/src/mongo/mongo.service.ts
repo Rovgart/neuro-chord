@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
-import { MongoServerError } from 'mongodb';
 import type { Model } from 'mongoose';
 import { UserStats } from './schemas/user-stats.schema';
 @Injectable()
@@ -30,11 +29,7 @@ export class MongoService {
               xp: 0,
             });
         } catch (error) {
-            if(error instanceof MongoServerError){
-                if(error.code ===11000){
-                    
-                }
-            }
+            
             
         }
        

@@ -1,19 +1,23 @@
+/** biome-ignore-all lint/style/useImportType: <explanation> */
 import {
+  BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
-  UnauthorizedException
+  UnauthorizedException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
 import { compare, genSalt, hash } from 'bcrypt';
+// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
+import * as crypto from 'crypto'; // Importuj cały moduł
 import { Logger } from 'nestjs-pino';
+import { CreateProfileDto } from 'src/auth/dto/create-profile-dto';
+import { LoginUserDto } from 'src/auth/dto/login-user-dto';
+import type { RegisterUserDto } from 'src/auth/dto/register-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RedisService } from 'src/redis/redis.service';
-import { CreateProfileDto } from 'src/users/dto/create-profile-dto';
-import { LoginUserDto } from 'src/users/dto/login-user-dto';
-import { RegisterUserDto } from 'src/users/dto/register-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -27,14 +31,15 @@ export class UsersService {
   async findAll() {
     return this.prisma.user.findMany();
   }
-  async registerUser(userData: RegisterUserDto): Promise<User> {
-      const existingUser = await this.prisma.user.findUnique({
+  async registerUser(
+    userData: RegisterUserDto,
+    devInfo: { ip: string | string[]; ua: string },
+  ): Promise<{ id: string; email: string; message: string; accessToken: string; refreshToken: string }> {
+    return await this.prisma.$transaction(async (tx) => {
+      const existingUser = await tx.user.findUnique({
         where: { email: userData.email },
       });
-      if (existingUser)
-        throw new ConflictException(
-          'User with this email address already exists',
-        );
+      if (existingUser) throw new ConflictException('User with this email address already exists');
       const salt = await genSalt();
       const hashed = await hash(userData.password, salt);
       const newUser = await this.prisma.user.create({
@@ -44,47 +49,49 @@ export class UsersService {
           role: 'STUDENT',
         },
       });
+      const tokens = await this.generateTokens({ id: newUser.id, email: newUser.email });
+      await tx.session.create({
+        data: {
+          userAgent: devInfo.ua,
+          ipAddress: devInfo.ip as string,
+          userId: newUser.id,
+          refreshToken: tokens.refreshToken,
+          expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
       this.eventEmitter.emit('user.registered', {
         userId: newUser.id,
         email: newUser.email,
       });
-      return newUser;
+      return { id: newUser.id, email: newUser.email, message: 'User succesfully registered', ...tokens };
+    });
   }
-  async loginUser(
-    userData: LoginUserDto,
-    userAgent: string,
-    ipAddress: string,
-  ) {
+  async loginUser(userData: LoginUserDto, devInfo: { ip: string; ua: string }) {
     const user = await this.prisma.user.findUnique({
       where: { email: userData.email },
     });
-    if (!user || !user.password)
-      throw new UnauthorizedException('Wrong email or password');
+    if (!user || !user.password) throw new UnauthorizedException('Wrong email or password');
 
     const isPasswordValid = await compare(userData.password, user.password);
-    if (!isPasswordValid)
-      throw new UnauthorizedException('Wrong email or password');
+    if (!isPasswordValid) throw new UnauthorizedException('Wrong email or password');
     const payload = { sub: user.id, email: user.email };
-    const accessToken = await this.jwtServ.signAsync(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: '15m',
-    });
-    const refreshToken = await this.jwtServ.signAsync(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: '7d',
-    });
+    const { refreshToken, accessToken } = await this.generateTokens(payload);
     await this.prisma.session.create({
       data: {
         refreshToken: refreshToken,
         userId: user.id,
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        userAgent: 'unknown',
-        ipAddress: 'unknown',
+        ipAddress: devInfo.ip,
+        userAgent: devInfo.ua,
       },
     });
     return {
       accessToken,
       refreshToken,
+      user: {
+        id: payload.sub,
+        email: payload.email,
+      },
     };
   }
   async validateOAuthUser(googleUser: any) {
@@ -103,28 +110,28 @@ export class UsersService {
     }
     const payload = { sub: user.id, email: user.email };
     return {
-      access_token: await this.jwtServ.signAsync(payload, {
+      accessToken: await this.jwtServ.signAsync(payload, {
         secret: process.env.JWT_SECRET,
       }),
     };
   }
   async createProfile(userId: string, profileData: CreateProfileDto) {
-      return await this.prisma.$transaction(async (transact) => {
-        const newProfile = await transact.profile.create({
-          data: {
-            userId: userId,
-            username: profileData.username,
-            displayName: profileData.username,
-          },
-        });
-        await transact.user.update({
-          where: { id: userId },
-          data: {
-            onboardingComplete: true,
-          },
-        });
-        return newProfile;
+    return await this.prisma.$transaction(async (transact) => {
+      const newProfile = await transact.profile.create({
+        data: {
+          userId: userId,
+          username: profileData.username,
+          displayName: profileData.username,
+        },
       });
+      await transact.user.update({
+        where: { id: userId },
+        data: {
+          onboardingComplete: true,
+        },
+      });
+      return newProfile;
+    });
   }
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -138,18 +145,103 @@ export class UsersService {
     return rest;
   }
   async fullLogout(accessToken: string, refreshToken: string) {
-      await this.prisma.session.delete({
+    if (refreshToken) {
+      await this.prisma.session.deleteMany({
         where: { refreshToken: refreshToken },
       });
-      const decoded = this.jwtServ.decode(accessToken);
-      const remainingTime = decoded.exp - Math.floor(Date.now() / 1000);
-      if (remainingTime > 0) {
-        await this.redisService.setWithExpiry(
-          `bl:${accessToken}`,
-          'blacklisted',
-          60 * 60,
-        ); // Blacklist for 1 hour
-      }
+    }
+    try {
+      const decoded = this.jwtServ.decode(accessToken) as { exp: number };
+      if (decoded?.exp) {
+        const now = Math.floor(Date.now() / 1000);
+        const remainingTime = decoded.exp - now;
 
+        if (remainingTime > 0) {
+          await this.redisService.setWithExpiry(`bl:${accessToken}`, 'true', remainingTime);
+        }
+      }
+    } catch (err) {
+      this.logger.error(err);
+    }
+  }
+  async recoverPassword(email: string) {
+    if (!email) {
+      throw new NotFoundException('No email provided');
+    }
+    const user = await this.prisma?.user.findUnique({
+      where: { email },
+    });
+    if (!user) {
+      throw new NotFoundException("User with this email doesn't exists");
+    }
+    const expiresAt = new Date(Date.now() + 3600000);
+    const token = crypto.randomBytes(32).toString('hex');
+    await this.prisma?.passwordReset.upsert({
+      where: { userId: user.id },
+      update: {
+        token,
+        email: user.email,
+        expiresAt,
+      },
+      create: {
+        userId: user.id,
+        email,
+        token,
+        expiresAt,
+      },
+    });
+    return token;
+  }
+  async resetPassword(token: string, password: string) {
+    const salt = await genSalt();
+    const hashed = await hash(password, salt);
+    const resetRecord = await this.prisma.passwordReset.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+    if (!resetRecord || resetRecord.expiresAt.getTime() <= Date.now()) {
+      throw new BadRequestException('Token is invalid or expired');
+    }
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: {
+          id: resetRecord.userId,
+        },
+        data: {
+          password: hashed,
+        },
+      });
+      await tx.passwordReset.delete({
+        where: { id: resetRecord.id },
+      });
+    });
+  }
+  async refreshTokens(token: string) {
+    const payload = await this.jwtServ.verifyAsync(token, {
+      secret: process.env.JWT_REFRESH_SECRET,
+    });
+    const isBlacklisted = await this.redisService.get(`blacklist:${token}`);
+    if (isBlacklisted) throw new ForbiddenException('Access Denied');
+    const tokens = await this.generateTokens({ userId: payload.sub, email: payload.email });
+    await this.redisService.setWithExpiry(`refreshToken`, token, 60 * 60 * 24 * 7);
+    return tokens;
+  }
+  async generateTokens(payload: any) {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtServ.signAsync(payload, { secret: process.env.JWT_SECRET, expiresIn: '15m' }),
+      this.jwtServ.signAsync(payload, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }),
+    ]);
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+  async isEmailAvailable(email: string) {
+    console.log(email);
+    const user = await this.prisma.user.findUnique({
+      where: { email: email },
+      select: { id: true },
+    });
+    return { isAvailable: !user };
   }
 }
