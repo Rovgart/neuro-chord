@@ -1,22 +1,18 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-google-oauth20';
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
-  constructor() {
+  constructor(private configService: ConfigService) {
     super({
-      clientID: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      clientID: configService.get('GOOGLE_CLIENT_ID') || '',
+      clientSecret: configService.get('GOOGLE_CLIENT_SECRET') || '',
+      callbackURL: configService.get('GOOGLE_CALLBACK_URL') || '',
       scope: ['email', 'profile'],
     });
   }
-  // ✅ DOBRZE
-  async validate(
-    accessToken: string,
-    refreshToken: string,
-    profile: any,
-  ): Promise<any> {
+  async validate(accessToken: string, refreshToken: string, profile: any): Promise<any> {
     const { name, emails, photos } = profile;
 
     const user = {
@@ -24,10 +20,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       firstName: name.givenName,
       lastName: name.familyName,
       picture: photos[0].value,
-      accessToken, // Opcjonalnie, jeśli go potrzebujesz
+      accessToken,
     };
-
-    // Po prostu zwracasz obiekt. NestJS sam zajmie się resztą.
     return user;
   }
 }

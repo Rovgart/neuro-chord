@@ -1,10 +1,10 @@
 'use client';
+import { type RegisterSchema, registerSchema } from '@/schemas/auth';
+import { useLazyCheckEmailQuery, useRegisterMutation } from '@/services/api';
 import { Button, FieldError, Form, Input, Label, TextField, toast } from '@heroui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { type RegisterSchema, registerSchema } from '@/schemas/auth';
-import { useLazyCheckEmailQuery, useRegisterMutation } from '@/services/api';
 
 export default function RegisterForm() {
   const [trigger, { data, isFetching, isLoading: isCheckingLoading }] = useLazyCheckEmailQuery();
@@ -29,7 +29,6 @@ export default function RegisterForm() {
       router.push('/dashboard');
     } catch (err: any) {
       const errorMessage = err?.data?.message;
-      console.log(err);
 
       if (Array.isArray(errorMessage)) {
         toast.danger(errorMessage[0]);
@@ -58,10 +57,10 @@ export default function RegisterForm() {
             {...register('email')}
             onBlur={async (e) => {
               const email = e.target.value;
+
               try {
                 if (email) {
                   const result = await trigger(email).unwrap();
-                  console.log(result);
                   if (!result.isAvailable) {
                     setError('email', { type: 'manual', message: 'This email is already in use' });
                   } else {
@@ -69,6 +68,7 @@ export default function RegisterForm() {
                   }
                 }
               } catch (error) {
+                console.error('Failed to authorize', error);
                 setError('email', { type: 'manual', message: 'Bad request' });
               }
             }}

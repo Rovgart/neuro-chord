@@ -2,8 +2,8 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -59,10 +59,10 @@ export class UsersService {
           expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
       });
-      this.eventEmitter.emit('user.registered', {
-        userId: newUser.id,
-        email: newUser.email,
-      });
+      // this.eventEmitter.emit('user.registered', {
+      //   userId: newUser.id,
+      //   email: newUser.email,
+      // });
       return { id: newUser.id, email: newUser.email, message: 'User succesfully registered', ...tokens };
     });
   }
@@ -74,7 +74,7 @@ export class UsersService {
 
     const isPasswordValid = await compare(userData.password, user.password);
     if (!isPasswordValid) throw new UnauthorizedException('Wrong email or password');
-    const payload = { sub: user.id, email: user.email };
+    const payload = { id: user.id, email: user.email };
     const { refreshToken, accessToken } = await this.generateTokens(payload);
     await this.prisma.session.create({
       data: {
@@ -89,7 +89,7 @@ export class UsersService {
       accessToken,
       refreshToken,
       user: {
-        id: payload.sub,
+        id: payload.id,
         email: payload.email,
       },
     };
@@ -145,23 +145,32 @@ export class UsersService {
     return rest;
   }
   async fullLogout(accessToken: string, refreshToken: string) {
-    if (refreshToken) {
-      await this.prisma.session.deleteMany({
-        where: { refreshToken: refreshToken },
-      });
-    }
     try {
-      const decoded = this.jwtServ.decode(accessToken) as { exp: number };
-      if (decoded?.exp) {
+      const decodedRefresh = this.jwtServ.decode(refreshToken) as { exp: number };
+      if (refreshToken) {
+        await this.prisma.session.deleteMany({
+          where: { refreshToken: refreshToken },
+        });
+      }
+      if (decodedRefresh.exp) {
         const now = Math.floor(Date.now() / 1000);
-        const remainingTime = decoded.exp - now;
+        const remainingTime = decodedRefresh.exp - now;
 
         if (remainingTime > 0) {
-          await this.redisService.setWithExpiry(`bl:${accessToken}`, 'true', remainingTime);
+          await this.redisService.setWithExpiry(`bl_acc:${accessToken}`, 'true', remainingTime);
+        }
+      }
+      const decodedAccess = this.jwtServ.decode(accessToken) as { exp: number };
+      if (decodedAccess?.exp) {
+        const now = Math.floor(Date.now() / 1000);
+        const remainingTime = decodedRefresh.exp - now;
+        if (remainingTime > 0) {
+          await this.redisService.setWithExpiry(`bl_ref:${refreshToken}`, 'true', remainingTime);
         }
       }
     } catch (err) {
       this.logger.error(err);
+      throw new InternalServerErrorException('Failed to logout', err);
     }
   }
   async recoverPassword(email: string) {
@@ -216,20 +225,54 @@ export class UsersService {
       });
     });
   }
-  async refreshTokens(token: string) {
-    const payload = await this.jwtServ.verifyAsync(token, {
-      secret: process.env.JWT_REFRESH_SECRET,
-    });
-    const isBlacklisted = await this.redisService.get(`blacklist:${token}`);
-    if (isBlacklisted) throw new ForbiddenException('Access Denied');
-    const tokens = await this.generateTokens({ userId: payload.sub, email: payload.email });
-    await this.redisService.setWithExpiry(`refreshToken`, token, 60 * 60 * 24 * 7);
-    return tokens;
+  async getUser(accessToken: string) {
+    try {
+      const payload = await this.jwtServ.verifyAsync(accessToken, {
+        secret: process.env.JWT_SECRET,
+      });
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload?.sub },
+      });
+      if (!user) {
+        throw new NotFoundException("This user doesn't exist");
+      }
+      return { id: payload.sub, email: payload.email };
+    } catch (error) {
+      this.logger.error('Failed ', error);
+      console.error('Failed to return user values', error);
+      throw new UnauthorizedException('Failed to return user values', error);
+    }
   }
-  async generateTokens(payload: any) {
+  async refreshTokens(refreshToken: string) {
+    try {
+      const payload = await this.jwtServ.verifyAsync(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+      const isBlacklisted = await this.redisService.get(`bl_ref:${refreshToken}`);
+      if (isBlacklisted) {
+        throw new UnauthorizedException('Refresh token is blacklisted');
+      }
+      const remainingTime = payload.exp - Math.floor(Date.now() / 1000);
+      if (remainingTime > 0) {
+        await this.redisService.setWithExpiry(`bl_ref:${refreshToken}`, 'true', remainingTime);
+      }
+      const tokens = await this.generateTokens({ id: payload.id, email: payload.email });
+      return tokens;
+    } catch (error) {
+      this.logger.error('Failed to generate new pair of tokens ', error);
+      throw new InternalServerErrorException('Failed to generate new pair of tokens', error);
+    }
+  }
+  async generateTokens(payload: { id: string; email: string }): Promise<{ accessToken: string; refreshToken: string }> {
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtServ.signAsync(payload, { secret: process.env.JWT_SECRET, expiresIn: '15m' }),
-      this.jwtServ.signAsync(payload, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }),
+      this.jwtServ.signAsync(
+        { id: payload.id, email: payload.email },
+        { secret: process.env.JWT_SECRET, expiresIn: '15m' },
+      ),
+      this.jwtServ.signAsync(
+        { id: payload.id, email: payload.email },
+        { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
+      ),
     ]);
     return {
       accessToken,
@@ -237,7 +280,6 @@ export class UsersService {
     };
   }
   async isEmailAvailable(email: string) {
-    console.log(email);
     const user = await this.prisma.user.findUnique({
       where: { email: email },
       select: { id: true },

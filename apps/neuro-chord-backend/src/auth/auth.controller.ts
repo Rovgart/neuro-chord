@@ -11,6 +11,7 @@ import { RecoverPasswordDto } from './dto/recover-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthGuard } from './guards/auth.guard';
 import { GoogleOAuthGuard } from './guards/google-oauth.guard';
+import { JwtRefreshGuard } from './guards/refresh.guard';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly userService: UsersService) {}
@@ -77,6 +78,7 @@ export class AuthController {
     return res.status(HttpStatus.OK);
   }
   @ApiBearerAuth('access-token')
+  @UseGuards(JwtRefreshGuard)
   @Post('logout')
   async logout(@Req() req: any, @Res({ passthrough: true }) res: any) {
     const token = req.headers.authorization?.split(' ')[1];
@@ -101,23 +103,34 @@ export class AuthController {
     await this.userService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
     return { message: 'Password successfully updated' };
   }
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard)
   @Get('me')
-  async getMe(@Req() request: Request, @Res({ passthrough: true }) res: Response) {
+  async getMe(@Req() request: Request) {
     // biome-ignore lint/complexity/useLiteralKeys: <explanation>
-    const refreshToken = request.cookies['refresh_token'];
-    if (!refreshToken) {
-      throw new NotFoundException('Refresh token doesnt exists');
+    // Decode token
+    const accessToken = request.headers.authorization?.split(' ')[1];
+    if (!accessToken) {
+      throw new NotFoundException('Access token doesnt exists');
     }
-    const tokens = await this.userService.refreshTokens(refreshToken);
-    res.cookie('refresh_token', tokens, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: 'strict',
-      secure: false,
-    });
-    return tokens;
+    const user = await this.userService.getUser(accessToken);
+    return user;
   }
-  @Post()
+  @UseGuards(JwtRefreshGuard)
+  @Post('refresh')
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.refresh_token;
+    console.log(refreshToken);
+    const tokens = await this.userService.refreshTokens(refreshToken);
+    res.cookie('refresh', tokens?.refreshToken, {
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: process.env.NODE_ENV !== 'production' ? 'none' : 'strict',
+      httpOnly: true,
+      secure: true,
+    });
+    return { accessToken: tokens.accessToken };
+  }
+  @Post('')
   async checkEmail(@Query() query: CheckEmailDTO) {
     return this.userService.isEmailAvailable(query.email);
   }

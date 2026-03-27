@@ -1,31 +1,33 @@
+import type { LoginSchema, RegisterSchema } from '@/schemas/auth';
+import { setCredentials } from '@/store/slices/authSlice';
+import type { LoginResponseT, UserRegisterResponseT } from '@/types';
 import type { BaseQueryFn } from '@reduxjs/toolkit/query';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { LoginSchema, RegisterSchema } from '@/schemas/auth';
-import type { LoginResponseT, UserRegisterResponseT } from '@/types';
 
-const baseQuery = fetchBaseQuery({ baseUrl: 'http://localhost:3000/' });
+const baseQuery = fetchBaseQuery({ baseUrl: 'http://localhost:3000' });
 
 const baseQueryWithReauth: BaseQueryFn = async (args, api, options) => {
   //  First call
-  const result = await baseQuery(args, api, options);
+  let result = await baseQuery(args, api, options);
   // If error === 401
   if (result.error?.status === 401) {
     try {
-      // Try to refresh token
+      const refreshResult = await api.dispatch(neuroapi.endpoints.refreshToken.initiate({}));
+      if (refreshResult.data) {
+        result = await baseQuery(args, api, options);
+      } else {
+        await api.dispatch(neuroapi.endpoints.logout.initiate({}));
+        api.dispatch(setCredentials({ user: null, accessToken: null }));
+      }
     } catch (err: unknown) {
-      //  else logout user
+      console.error('Reauth error', err);
     }
   }
+  return result;
 };
 export const neuroapi = createApi({
   reducerPath: 'neuroapi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000',
-    prepareHeaders: (headers) => {
-      const token = headers.getSetCookie();
-      console.log(token);
-    },
-  }),
+  baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponseT, LoginSchema>({
       query: (credentials) => ({
@@ -73,11 +75,14 @@ export const neuroapi = createApi({
         method: 'POST',
       }),
     }),
-    refreshToken:builder.query({
-      query:()=>P{}
-    })
+    refreshToken: builder.query({
+      query: () => ({
+        url: `auth/me`,
+        method: 'GET',
+      }),
+    }),
   }),
-})
+});
 export const {
   useLoginMutation,
   useLazyCheckEmailQuery,
