@@ -11,7 +11,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
 import { compare, genSalt, hash } from 'bcrypt';
 // biome-ignore lint/style/useNodejsImportProtocol: <explanation>
-import * as crypto from 'crypto'; // Importuj cały moduł
+import { nanoid } from 'nanoid';
 import { Logger } from 'nestjs-pino';
 import { CreateProfileDto } from 'src/auth/dto/create-profile-dto';
 import { LoginUserDto } from 'src/auth/dto/login-user-dto';
@@ -152,57 +152,23 @@ export class UsersService {
       throw new InternalServerErrorException('Failed to logout', err);
     }
   }
-  async recoverPassword(email: string) {
-    if (!email) {
-      throw new NotFoundException('No email provided');
-    }
-    const user = await this.prisma?.user.findUnique({
-      where: { email },
-    });
-    if (!user) {
-      throw new NotFoundException("User with this email doesn't exists");
-    }
-    const expiresAt = new Date(Date.now() + 3600000);
-    const token = crypto.randomBytes(32).toString('hex');
-    await this.prisma?.passwordReset.upsert({
-      where: { userId: user.id },
-      update: {
-        token,
-        email: user.email,
-        expiresAt,
-      },
-      create: {
-        userId: user.id,
-        email,
-        token,
-        expiresAt,
-      },
-    });
-    return token;
-  }
   async resetPassword(token: string, password: string) {
-    const salt = await genSalt();
-    const hashed = await hash(password, salt);
-    const resetRecord = await this.prisma.passwordReset.findUnique({
-      where: { token },
-      include: { user: true },
-    });
-    if (!resetRecord || resetRecord.expiresAt.getTime() <= Date.now()) {
-      throw new BadRequestException('Token is invalid or expired');
+    try {
+      const salt = await genSalt();
+      const hashed = await hash(password, salt);
+      const userId = await this.redisService.get(`password-reset:${token}`);
+      if (!userId) {
+        throw new BadRequestException('Invalid or expired password reset token');
+      }
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashed },
+      });
+      await this.redisService.del(`password-reset:${token}`);
+    } catch (error) {
+      this.logger.error('Failed to reset password', error);
+      throw new InternalServerErrorException('Failed to reset password', error);
     }
-    return await this.prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: {
-          id: resetRecord.userId,
-        },
-        data: {
-          password: hashed,
-        },
-      });
-      await tx.passwordReset.delete({
-        where: { id: resetRecord.id },
-      });
-    });
   }
   async getUser(accessToken: string) {
     try {
@@ -262,5 +228,26 @@ export class UsersService {
       select: { id: true },
     });
     return { isAvailable: !user };
+  }
+  async initRecoverPassword(email: string) {
+    try {
+      // Verify that user exists
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+      if (!user) {
+        throw new NotFoundException("User with this email doesn't exist");
+      }
+      const payload = { id: user.id, email: user.email };
+      // Generate nanoid token for email link
+      const uniqueToken = nanoid();
+
+      // Generate unique token and set it in Redis with expiration
+      await this.redisService.setWithExpiry(`password-reset:${uniqueToken}`, payload.id, 15 * 60);
+      return uniqueToken;
+    } catch (error) {
+      this.logger.error('Failed to init recover password process', error);
+      throw new InternalServerErrorException('Failed to init recover password process', error);
+    }
   }
 }

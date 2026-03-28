@@ -1,6 +1,5 @@
 /** biome-ignore-all lint/style/useImportType: <explanation> */
 import { Body, Controller, Get, HttpStatus, NotFoundException, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { CreateProfileDto } from 'src/auth/dto/create-profile-dto';
 import { LoginUserDto } from 'src/auth/dto/login-user-dto';
@@ -8,11 +7,13 @@ import { RegisterUserDto } from 'src/auth/dto/register-user.dto';
 import { UsersService } from 'src/users/users.service';
 import { AuthProtection } from './decorators/auth.decorator';
 import { Public } from './decorators/public.decorator';
+import { RecoverPasswordToken } from './decorators/recover-password.decorator';
 import { CurrentUser } from './decorators/user.decorator';
 import { CheckEmailDTO } from './dto/check-email.dto';
 import { RecoverPasswordDto } from './dto/recover-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { GoogleOAuthGuard } from './guards/google-oauth.guard';
+import { PasswordRecoverGuard } from './guards/password-recover.guard';
 import { JwtRefreshGuard } from './guards/refresh.guard';
 @Controller('auth')
 export class AuthController {
@@ -86,25 +87,26 @@ export class AuthController {
     res.clearCookie('refresh_token');
     return { message: 'Logged out successfully' };
   }
-  @Public()
-  @Post('recover')
+  @Post('init-recover-account')
   async sendARecoverLink(@Body() recoverDto: RecoverPasswordDto) {
     const email = recoverDto.email;
-    const link = await this.userService.recoverPassword(email);
+    const token = await this.userService.initRecoverPassword(email);
 
-    return { message: 'Send recover password link', link };
+    return { message: 'Send recover password link', token };
   }
-  @ApiBearerAuth('access-token')
   @Post('reset-password')
-  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto, @Res() res: Response) {
-    await this.userService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
+  @UseGuards(PasswordRecoverGuard)
+  async resetPassword(
+    @RecoverPasswordToken() @Query('token') token: string,
+    @Body() resetPasswordDto: ResetPasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.userService.resetPassword(token, resetPasswordDto.newPassword);
     return { message: 'Password successfully updated' };
   }
   @AuthProtection()
   @Get('me')
   async getMe(@CurrentUser() user: any) {
-    // biome-ignore lint/complexity/useLiteralKeys: <explanation>
-    // Decode token
     return user;
   }
   @UseGuards(JwtRefreshGuard)
@@ -122,7 +124,7 @@ export class AuthController {
   }
   @AuthProtection()
   @Post('')
-  async checkEmail(@Query() query: CheckEmailDTO) {
+  async checkEmail(@Query('email') query: CheckEmailDTO) {
     return this.userService.isEmailAvailable(query.email);
   }
 }

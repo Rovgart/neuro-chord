@@ -31,6 +31,13 @@ export class RedisService {
       this.logger.error('Redis error', err);
     }
   }
+  async del(key: string): Promise<void> {
+    try {
+      await this.redisClient.del(key);
+    } catch (error) {
+      this.logger.error('Redis error', error);
+    }
+  }
   async get(key: string): Promise<string | null> {
     return await this.redisClient.get(key);
   }

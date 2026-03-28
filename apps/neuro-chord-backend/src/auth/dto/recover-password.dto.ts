@@ -1,7 +1,7 @@
 import { IsEmail, IsNotEmpty } from 'class-validator';
 
 export class RecoverPasswordDto {
-  @IsEmail({}, { message: 'To nie jest poprawny adres email' })
-  @IsNotEmpty({ message: 'Email jest wymagany' })
+  @IsEmail({}, { message: 'Not correct email format' })
+  @IsNotEmpty({ message: 'Email is required' })
   email: string;
 }
