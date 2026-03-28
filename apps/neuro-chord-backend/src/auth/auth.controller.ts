@@ -6,16 +6,18 @@ import { CreateProfileDto } from 'src/auth/dto/create-profile-dto';
 import { LoginUserDto } from 'src/auth/dto/login-user-dto';
 import { RegisterUserDto } from 'src/auth/dto/register-user.dto';
 import { UsersService } from 'src/users/users.service';
+import { AuthProtection } from './decorators/auth.decorator';
+import { Public } from './decorators/public.decorator';
+import { CurrentUser } from './decorators/user.decorator';
 import { CheckEmailDTO } from './dto/check-email.dto';
 import { RecoverPasswordDto } from './dto/recover-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { AuthGuard } from './guards/auth.guard';
 import { GoogleOAuthGuard } from './guards/google-oauth.guard';
 import { JwtRefreshGuard } from './guards/refresh.guard';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly userService: UsersService) {}
-
+  @Public()
   @Post('register')
   async register(@Body() userData: RegisterUserDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
@@ -28,7 +30,7 @@ export class AuthController {
     });
     return registeredUser;
   }
-
+  @Public()
   @Post('login')
   async login(@Req() req: Request, @Res({ passthrough: true }) res: Response, @Body() userData: LoginUserDto) {
     const userAgent = req.headers['user-agent'] || 'unknown';
@@ -46,15 +48,12 @@ export class AuthController {
     });
     return { message: 'User succesfully logged in', ...user };
   }
-  @ApiBearerAuth('access-token')
-  @UseGuards(AuthGuard)
+  @AuthProtection()
   @Post('complete-profile')
-  async completeProfile(@Req() req: any, @Body() dto: CreateProfileDto) {
-    const userIdFromToken = req.user.sub || req.user.id;
-    return await this.userService.createProfile(userIdFromToken, dto);
+  async completeProfile(@CurrentUser() user: any, @Body() dto: CreateProfileDto) {
+    return await this.userService.createProfile(user.id, dto);
   }
-  @ApiBearerAuth('access-token')
-  @UseGuards(AuthGuard)
+  @AuthProtection()
   @Get('get-profile')
   async getProfile(@Req() req: Request) {
     const userIdFromToken = req.user as string;
@@ -77,19 +76,17 @@ export class AuthController {
     });
     return res.status(HttpStatus.OK);
   }
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtRefreshGuard)
+  @AuthProtection()
   @Post('logout')
   async logout(@Req() req: any, @Res({ passthrough: true }) res: any) {
     const token = req.headers.authorization?.split(' ')[1];
-    const refreshToken = req.cookies?.refresh_token;
     if (token) {
-      await this.userService.fullLogout(token, refreshToken);
+      await this.userService.fullLogout(token);
     }
     res.clearCookie('refresh_token');
     return { message: 'Logged out successfully' };
   }
-  @ApiBearerAuth('access-token')
+  @Public()
   @Post('recover')
   async sendARecoverLink(@Body() recoverDto: RecoverPasswordDto) {
     const email = recoverDto.email;
@@ -103,24 +100,17 @@ export class AuthController {
     await this.userService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
     return { message: 'Password successfully updated' };
   }
-  @ApiBearerAuth('access-token')
-  @UseGuards(AuthGuard)
+  @AuthProtection()
   @Get('me')
-  async getMe(@Req() request: Request) {
+  async getMe(@CurrentUser() user: any) {
     // biome-ignore lint/complexity/useLiteralKeys: <explanation>
     // Decode token
-    const accessToken = request.headers.authorization?.split(' ')[1];
-    if (!accessToken) {
-      throw new NotFoundException('Access token doesnt exists');
-    }
-    const user = await this.userService.getUser(accessToken);
     return user;
   }
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies?.refresh_token;
-    console.log(refreshToken);
     const tokens = await this.userService.refreshTokens(refreshToken);
     res.cookie('refresh', tokens?.refreshToken, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -130,6 +120,7 @@ export class AuthController {
     });
     return { accessToken: tokens.accessToken };
   }
+  @AuthProtection()
   @Post('')
   async checkEmail(@Query() query: CheckEmailDTO) {
     return this.userService.isEmailAvailable(query.email);

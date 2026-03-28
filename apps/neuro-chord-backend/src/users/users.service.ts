@@ -55,8 +55,6 @@ export class UsersService {
           userAgent: devInfo.ua,
           ipAddress: devInfo.ip as string,
           userId: newUser.id,
-          refreshToken: tokens.refreshToken,
-          expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
       });
       // this.eventEmitter.emit('user.registered', {
@@ -78,9 +76,7 @@ export class UsersService {
     const { refreshToken, accessToken } = await this.generateTokens(payload);
     await this.prisma.session.create({
       data: {
-        refreshToken: refreshToken,
         userId: user.id,
-        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         ipAddress: devInfo.ip,
         userAgent: devInfo.ua,
       },
@@ -144,30 +140,13 @@ export class UsersService {
     const { password, ...rest } = user;
     return rest;
   }
-  async fullLogout(accessToken: string, refreshToken: string) {
+  async fullLogout(accessToken: string) {
     try {
-      const decodedRefresh = this.jwtServ.decode(refreshToken) as { exp: number };
-      if (refreshToken) {
-        await this.prisma.session.deleteMany({
-          where: { refreshToken: refreshToken },
-        });
-      }
-      if (decodedRefresh.exp) {
-        const now = Math.floor(Date.now() / 1000);
-        const remainingTime = decodedRefresh.exp - now;
-
-        if (remainingTime > 0) {
-          await this.redisService.setWithExpiry(`bl_acc:${accessToken}`, 'true', remainingTime);
-        }
-      }
-      const decodedAccess = this.jwtServ.decode(accessToken) as { exp: number };
-      if (decodedAccess?.exp) {
-        const now = Math.floor(Date.now() / 1000);
-        const remainingTime = decodedRefresh.exp - now;
-        if (remainingTime > 0) {
-          await this.redisService.setWithExpiry(`bl_ref:${refreshToken}`, 'true', remainingTime);
-        }
-      }
+      const user = await this.jwtServ.decode(accessToken);
+      await this.prisma.session.deleteMany({
+        where: { userId: user.id },
+      });
+      await this.redisService.setWithExpiry(`bl_acc:${accessToken}`, 'true', 15 * 60);
     } catch (err) {
       this.logger.error(err);
       throw new InternalServerErrorException('Failed to logout', err);
@@ -227,16 +206,14 @@ export class UsersService {
   }
   async getUser(accessToken: string) {
     try {
-      const payload = await this.jwtServ.verifyAsync(accessToken, {
-        secret: process.env.JWT_SECRET,
-      });
+      const payload = await this.jwtServ.decode(accessToken);
       const user = await this.prisma.user.findUnique({
-        where: { id: payload?.sub },
+        where: { id: payload?.id },
       });
       if (!user) {
         throw new NotFoundException("This user doesn't exist");
       }
-      return { id: payload.sub, email: payload.email };
+      return { id: payload.id, email: payload.email };
     } catch (error) {
       this.logger.error('Failed ', error);
       console.error('Failed to return user values', error);
