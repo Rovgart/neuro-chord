@@ -11,7 +11,13 @@ services:
             - "5432:5432"
         volumes:
             - postgres_data:/var/lib/postgresql/data
-
+    mailpit:
+        image: axllent/mailpit:latest
+        container_name: audio-app-mailpit
+        restart: always
+        ports:
+            - "1025:1025"
+            - "8025:8025" 
     redis:
         image: redis:7-alpine
         container_name: audio-app-redis

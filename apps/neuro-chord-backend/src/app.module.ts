@@ -1,3 +1,5 @@
+import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.adapter';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
@@ -15,6 +17,22 @@ import { StatsModule } from './stats/stats.module';
   imports: [
     PrometheusModule.register({
       path: '/metrics',
+    }),
+    MailerModule.forRoot({
+      transport: {
+        host: 'audio-app-mailpit',
+        port: 1025,
+        auth: {
+          user: '',
+          pass: '',
+        },
+      },
+      defaults: {
+        from: 'No reply <no-reply@example.com>',
+      },
+      template: {
+        adapter: new HandlebarsAdapter(),
+      },
     }),
     EventEmitterModule.forRoot(),
     LoggerModule.forRoot({
