@@ -1,253 +1,114 @@
-/** biome-ignore-all lint/style/useImportType: <explanation> */
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { JwtService } from '@nestjs/jwt';
-import { compare, genSalt, hash } from 'bcrypt';
-// biome-ignore lint/style/useNodejsImportProtocol: <explanation>
-import { nanoid } from 'nanoid';
-import { Logger } from 'nestjs-pino';
-import { CreateProfileDto } from 'src/auth/dto/create-profile-dto';
-import { LoginUserDto } from 'src/auth/dto/login-user-dto';
-import type { RegisterUserDto } from 'src/auth/dto/register-user.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { RedisService } from 'src/redis/redis.service';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Prisma, Role } from '@prisma/client';
+import { PrismaService } from '@prisma/prisma.service';
+import { SecurityService } from '@security/security.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwtServ: JwtService,
-    private readonly redisService: RedisService,
-    private readonly logger: Logger,
-    private eventEmitter: EventEmitter2,
+    private readonly securityService: SecurityService,
   ) {}
-  async findAll() {
+  public async findAll() {
     return this.prisma.user.findMany();
   }
-  async registerUser(
-    userData: RegisterUserDto,
-    devInfo: { ip: string | string[]; ua: string },
-  ): Promise<{ id: string; email: string; message: string; accessToken: string; refreshToken: string }> {
-    return await this.prisma.$transaction(async (tx) => {
-      const existingUser = await tx.user.findUnique({
-        where: { email: userData.email },
-      });
-      if (existingUser) throw new ConflictException('User with this email address already exists');
-      const salt = await genSalt();
-      const hashed = await hash(userData.password, salt);
-      const newUser = await this.prisma.user.create({
-        data: {
-          email: userData.email,
-          password: hashed,
-          role: 'STUDENT',
-        },
-      });
-      const tokens = await this.generateTokens({ id: newUser.id, email: newUser.email });
-      await tx.session.create({
-        data: {
-          userAgent: devInfo.ua,
-          ipAddress: devInfo.ip as string,
-          userId: newUser.id,
-        },
-      });
-      // this.eventEmitter.emit('user.registered', {
-      //   userId: newUser.id,
-      //   email: newUser.email,
-      // });
-      return { id: newUser.id, email: newUser.email, message: 'User succesfully registered', ...tokens };
-    });
-  }
-  async loginUser(userData: LoginUserDto, devInfo: { ip: string; ua: string }) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: userData.email },
-    });
-    if (!user || !user.password) throw new UnauthorizedException('Wrong email or password');
-
-    const isPasswordValid = await compare(userData.password, user.password);
-    if (!isPasswordValid) throw new UnauthorizedException('Wrong email or password');
-    const payload = { id: user.id, email: user.email };
-    const { refreshToken, accessToken } = await this.generateTokens(payload);
-    await this.prisma.session.create({
+  private async createUser(email: string, password: string, role?: Role, tx?: Prisma.TransactionClient) {
+    const client = tx || this.prisma;
+    const hashed = await this.securityService.hashPassword(password);
+    const user = await client.user.create({
       data: {
-        userId: user.id,
-        ipAddress: devInfo.ip,
-        userAgent: devInfo.ua,
+        email: email,
+        password: hashed,
+        role: role,
       },
     });
-    return {
-      accessToken,
-      refreshToken,
-      user: {
-        id: payload.id,
-        email: payload.email,
-      },
-    };
+    return user;
   }
-  async validateOAuthUser(googleUser: any) {
-    let user = await this.prisma.user.findUnique({
-      where: {
-        email: googleUser.email,
-      },
-    });
-    if (!user) {
-      user = await this.prisma.user.create({
-        data: {
-          email: googleUser.email,
-          role: 'STUDENT',
-        },
-      });
-    }
-    const payload = { sub: user.id, email: user.email };
-    return {
-      accessToken: await this.jwtServ.signAsync(payload, {
-        secret: process.env.JWT_SECRET,
-      }),
-    };
+  private async updateUser(
+    where: Prisma.UserWhereUniqueInput,
+    data: Prisma.UserUpdateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx || this.prisma;
+    return await client.user.update({ where, data });
   }
-  async createProfile(userId: string, profileData: CreateProfileDto) {
-    return await this.prisma.$transaction(async (transact) => {
-      const newProfile = await transact.profile.create({
-        data: {
-          userId: userId,
-          username: profileData.username,
-          displayName: profileData.username,
-        },
-      });
-      await transact.user.update({
-        where: { id: userId },
-        data: {
-          onboardingComplete: true,
-        },
-      });
-      return newProfile;
-    });
+  public async updateStudent(id: string, data: Partial<Prisma.UserUpdateInput>, tx?: Prisma.TransactionClient) {
+    return this.updateUser({ id }, { ...data, role: Role.STUDENT }, tx);
   }
-  async getProfile(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { profile: true },
-    });
-    if (!user) {
-      throw new NotFoundException("User doesn't exist");
-    }
-    const { password, ...rest } = user;
-    return rest;
-  }
-  async fullLogout(accessToken: string) {
-    try {
-      const user = await this.jwtServ.decode(accessToken);
-      await this.prisma.session.deleteMany({
-        where: { userId: user.id },
-      });
-      await this.redisService.setWithExpiry(`bl_acc:${accessToken}`, 'true', 15 * 60);
-    } catch (err) {
-      this.logger.error(err);
-      throw new InternalServerErrorException('Failed to logout', err);
-    }
-  }
-  async resetPassword(token: string, password: string) {
-    try {
-      const salt = await genSalt();
-      const hashed = await hash(password, salt);
-      const userId = await this.redisService.get(`password-reset:${token}`);
-      if (!userId) {
-        throw new BadRequestException('Invalid or expired password reset token');
-      }
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { password: hashed },
-      });
-      await this.redisService.del(`password-reset:${token}`);
-    } catch (error) {
-      this.logger.error('Failed to reset password', error);
-      throw new InternalServerErrorException('Failed to reset password', error);
-    }
-  }
-  async getUser(accessToken: string) {
-    try {
-      const payload = await this.jwtServ.decode(accessToken);
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload?.id },
-      });
-      if (!user) {
-        throw new NotFoundException("This user doesn't exist");
-      }
-      return { id: payload.id, email: payload.email };
-    } catch (error) {
-      this.logger.error('Failed ', error);
-      console.error('Failed to return user values', error);
-      throw new UnauthorizedException('Failed to return user values', error);
-    }
-  }
-  async refreshTokens(refreshToken: string) {
-    try {
-      const payload = await this.jwtServ.verifyAsync(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
-      });
-      const isBlacklisted = await this.redisService.get(`bl_ref:${refreshToken}`);
-      if (isBlacklisted) {
-        throw new UnauthorizedException('Refresh token is blacklisted');
-      }
-      const remainingTime = payload.exp - Math.floor(Date.now() / 1000);
-      if (remainingTime > 0) {
-        await this.redisService.setWithExpiry(`bl_ref:${refreshToken}`, 'true', remainingTime);
-      }
-      const tokens = await this.generateTokens({ id: payload.id, email: payload.email });
-      return tokens;
-    } catch (error) {
-      this.logger.error('Failed to generate new pair of tokens ', error);
-      throw new InternalServerErrorException('Failed to generate new pair of tokens', error);
-    }
-  }
-  async generateTokens(payload: { id: string; email: string }): Promise<{ accessToken: string; refreshToken: string }> {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtServ.signAsync(
-        { id: payload.id, email: payload.email },
-        { secret: process.env.JWT_SECRET, expiresIn: '15m' },
-      ),
-      this.jwtServ.signAsync(
-        { id: payload.id, email: payload.email },
-        { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
-      ),
-    ]);
-    return {
-      accessToken,
-      refreshToken,
-    };
-  }
-  async isEmailAvailable(email: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: email },
-      select: { id: true },
-    });
-    return { isAvailable: !user };
-  }
-  async initRecoverPassword(email: string) {
-    try {
-      // Verify that user exists
-      const user = await this.prisma.user.findUnique({
-        where: { email },
-      });
-      if (!user) {
-        throw new NotFoundException("User with this email doesn't exist");
-      }
-      const payload = { id: user.id, email: user.email };
-      // Generate nanoid token for email link
-      const uniqueToken = nanoid();
 
-      // Generate unique token and set it in Redis with expiration
-      await this.redisService.setWithExpiry(`password-reset:${uniqueToken}`, payload.id, 15 * 60);
-      return uniqueToken;
-    } catch (error) {
-      this.logger.error('Failed to init recover password process', error);
-      throw new InternalServerErrorException('Failed to init recover password process', error);
+  public async updateTeacher(id: string, data: Partial<Prisma.UserUpdateInput>, tx?: Prisma.TransactionClient) {
+    return this.updateUser({ id }, { ...data, role: Role.TEACHER }, tx);
+  }
+
+  public async promoteToAdmin(id: string, tx?: Prisma.TransactionClient) {
+    return this.updateUser({ id }, { role: Role.ADMIN }, tx);
+  }
+  public async createTeacher(email: string, password: string, tx?: Prisma.TransactionClient) {
+    return await this.createUser(email, password, Role.TEACHER, tx);
+  }
+  public async createAdmin(email: string, password: string, tx?: Prisma.TransactionClient) {
+    return await this.createUser(email, password, Role.ADMIN, tx);
+  }
+  public async createStudent(email: string, password: string, tx?: Prisma.TransactionClient) {
+    return await this.createUser(email, password, Role.STUDENT, tx);
+  }
+  public async createTempUser(email: string, password: string, tx?: Prisma.TransactionClient) {
+    return await this.createUser(email, password, Role.STUDENT, tx);
+  }
+  private async find(
+    where: Prisma.UserWhereUniqueInput,
+    tx?: Prisma.TransactionClient,
+    includeSessions: boolean = false,
+  ) {
+    const client = tx || this.prisma;
+    return await client.user.findUnique({ where, include: includeSessions ? { sessions: true } : undefined });
+  }
+
+  public async findByEmail(email: string, tx?: Prisma.TransactionClient, includeSessions: boolean = false) {
+    return await this.find({ email }, tx, includeSessions);
+  }
+
+  public async findById(id: string, tx?: Prisma.TransactionClient, includeSessions: boolean = true) {
+    return await this.find({ id }, tx, includeSessions);
+  }
+
+  // public async createUserTransaction(userData: any, devInfo: { ip: string | string[]; ua: string }) {
+  //   return await this.prisma.$transaction(async (tx) => {
+  //     const existingUser = await this.findById('ID',,tx);
+  //     if (existingUser) throw new ConflictException('User with this email address already exists');
+  //     const hashed = await this.securityService.hashPassword(userData.password);
+  //     const newUser = await this.prisma.user.create({
+  //       data: {
+  //         email: userData.email,
+  //         password: hashed,
+  //         role: 'STUDENT',
+  //       },
+  //     });
+  //     const tokens = await this.securityService.generateTokens({
+  //       sub: newUser.id,
+  //       email: newUser.email,
+  //       role: newUser.role,
+  //       isVerified: newUser.isVerified,
+  //       sid:
+  //     });
+  //     await tx.session.create({
+  //       data: {
+  //         userAgent: devInfo.ua,
+  //         ipAddress: devInfo.ip as string,
+  //         userId: newUser.id,
+  //       },
+  //     });
+  //   });
+  // }
+  public async verifyUser(email: string) {
+    if (!email) {
+      throw new UnauthorizedException("Email wasn't provided");
+    }
+    const isExisting = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (isExisting) {
+      throw new BadRequestException('User with this e-mail already exists');
     }
   }
 }

@@ -1,25 +1,30 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { RedisModule } from 'src/redis/redis.module';
-import { UsersModule } from 'src/users/users.module';
+import { SecurityModule } from '@security/security.module';
+import { SessionModule } from '@session/session.module';
+import { UsersModule } from '@users/users.module';
+import { RedisModule } from 'src/common/infrastructure/redis/redis.module';
+import { VerificationsModule } from 'src/common/infrastructure/verifications/verifications.module';
 import { AuthController } from './auth.controller';
-import { AuthGuard } from './guards/auth.guard';
-import { GoogleStrategy } from './strategies/google.strategy';
-import { JwtStrategy } from './strategies/jwt.strategy';
-// auth.module.ts
+import { AuthService } from './auth.service';
+
 // auth.module.ts
 @Module({
   imports: [
     PassportModule,
+    UsersModule,
+    SecurityModule,
+    SessionModule,
+    VerificationsModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '7d' },
     }),
     RedisModule,
-    UsersModule,
   ],
   controllers: [AuthController],
-  providers: [GoogleStrategy, JwtStrategy, AuthGuard],
+  providers: [AuthService],
+  exports: [AuthService],
 })
 export class AuthModule {}

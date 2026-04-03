@@ -1,26 +1,34 @@
-import { MailerModule } from '@nestjs-modules/mailer';
+import { AuthModule } from '@auth/auth.module';
+import { AllExceptionsFilter } from '@filters/all-exceptions.filter';
+import { AuthGuard } from '@guards/auth.guard';
+import { MetadataInterceptor } from '@interceptors/metadata.interceptor';
+import { MailerModule } from '@mailer/mailer.module';
+import { MailerModule as NestMailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.adapter';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { JwtModule } from '@nestjs/jwt';
+import { PrismaModule } from '@prisma/prisma.module';
+import { RedisModule } from '@redis/redis.module';
+import { StatsModule } from '@stats/stats.module';
 import { makeCounterProvider, PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { LoggerModule } from 'nestjs-pino';
+import { join } from 'node:path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './auth/auth.module';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
-import { PrismaExceptionFilter } from './common/filters/prisma-exception-filter';
-import { PrismaModule } from './prisma/prisma.module';
-import { StatsModule } from './stats/stats.module';
+import { SecurityModule } from './common/infrastructure/security/security.module';
+import { SecurityService } from './common/infrastructure/security/security.service';
 @Module({
   imports: [
+    JwtModule,
     PrometheusModule.register({
       path: '/metrics',
     }),
-    MailerModule.forRoot({
+    NestMailerModule.forRoot({
       transport: {
-        host: 'audio-app-mailpit',
+        host: 'localhost',
         port: 1025,
         auth: {
           user: '',
@@ -31,6 +39,10 @@ import { StatsModule } from './stats/stats.module';
         from: 'No reply <no-reply@example.com>',
       },
       template: {
+        dir: join(process.cwd(), 'src', 'templates'),
+        options: {
+          strict: true,
+        },
         adapter: new HandlebarsAdapter(),
       },
     }),
@@ -53,8 +65,11 @@ import { StatsModule } from './stats/stats.module';
     }),
     StatsModule,
     PrismaModule,
+    MailerModule,
+    RedisModule,
     AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
+    SecurityModule,
     // MongooseModule.forRootAsync({
     //   inject: [ConfigService],
     //   useFactory: (configService: ConfigService) => ({
@@ -70,8 +85,9 @@ import { StatsModule } from './stats/stats.module';
   controllers: [AppController],
   providers: [
     AppService,
-    { provide: APP_FILTER, useClass: PrismaExceptionFilter },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_INTERCEPTOR, useClass: MetadataInterceptor },
     makeCounterProvider({
       name: 'mongo_errors_total',
       help: 'Total number of MongoDB errors',
@@ -82,6 +98,7 @@ import { StatsModule } from './stats/stats.module';
       help: 'Total number of HTTP errors',
       labelNames: ['status', 'method', 'path'],
     }),
+    SecurityService,
   ],
 })
 export class AppModule {}

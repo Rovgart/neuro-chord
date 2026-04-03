@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Account - Neuro-chord</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f172a;
+            margin: 0;
+            padding: 0;
+            color: #f8fafc;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            padding: 50px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            text-transform: uppercase;
+            color: #ffffff;
+        }
+        .content {
+            padding: 40px 35px;
+            line-height: 1.7;
+            text-align: center;
+        }
+        .title {
+            font-size: 24px;
+            color: #f1f5f9;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .description {
+            color: #94a3b8;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+        .btn {
+            background-color: #6366f1;
+            color: #ffffff !important;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+        .expiry-note {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 25px;
+            font-style: italic;
+        }
+        .footer {
+            background-color: #0f172a;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+            color: #475569;
+            border-top: 1px solid #1e293b;
+        }
+        .footer a {
+            color: #6366f1;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Neuro-chord</h1>
+        </div>
+        <div class="content">
+            <h2 class="title">Verify your email</h2>
+            <p class="description">
+                Almost there! To complete your <strong>Neuro-chord</strong> registration and unlock all features, please verify your email address by clicking the button below.
+            </p>
+            
+            <div class="button-container">
+                <a href="{{url}}" class="btn">Verify My Account</a>
+            </div>
+            
+            <p class="description" style="font-size: 14px;">
+                If the button doesn't work, copy and paste this link into your browser: <br>
+                <span style="color: #6366f1; word-break: break-all;">{{url}}</span>
+            </p>
+            
+            <p class="expiry-note">
+                This verification link will expire in 24 hours.
+            </p>
+        </div>
+        <div class="footer">
+            &copy; 2026 Neuro-chord Systems. Secure Authentication.<br>
+            If you didn't request this, you can safely ignore this email.
+        </div>
+    </div>
+</body>
+</html>

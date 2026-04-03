@@ -1,137 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider = "postgresql"
 }
-generator client {
-  provider = "prisma-client-js"
-}
+
 model User {
-  id String @id @default(cuid())  
-  email String @unique
-  password String?
-  role Role @default(STUDENT)
-  onboardingComplete Boolean @default(false) @map("onboarding_complete")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  profile Profile?
-  userStats UserStats?
-  subscription Subscription?
-  accounts Account[]
-  chats Chat[] @relation("UserChats")
-  messages Message[]
-  sessions Session[]
-  passwordReset PasswordReset?
+  id                 String         @id @default(cuid())
+  email              String         @unique
+  role               Role           @default(STUDENT)
+  onboardingComplete Boolean        @default(false) @map("onboarding_complete")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+  password           String?
+  isVerified         Boolean        @default(false) @map("is_verified")
+  accounts           Account[]
+  messages           Message[]
+  passwordReset      PasswordReset?
+  profile            Profile?
+  sessions           Session[]
+  subscription       Subscription?
+  userStats          UserStats?
+  verification       Verification?
+  chats              Chat[]         @relation("UserChats")
 }
+
 model Account {
-  id String @id @default(cuid())
-  userId String @map("user_id")
-  user User  @relation(fields: [userId], references: [id], onDelete: Cascade) 
-  provider PROVIDER
-  providerAccountId String @map("provider_account_id")
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  provider          PROVIDER
+  providerAccountId String   @map("provider_account_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Verification {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  @@unique([provider, providerAccountId]) 
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
 model Profile {
-  id String @id @default(cuid()) 
-  userId String @unique @map("user_id")
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade) 
-  username String @unique 
-  experienceLevel EXPERIENCE_LEVEL @default(BEGINNER) @map("experience_level")
-  displayName String @map("display_name")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  
+  id          String          @id @default(cuid())
+  userId      String          @unique @map("user_id")
+  displayName String          @map("display_name")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  description String?
+  imgUrl      String?
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student     StudentProfile?
+  teacher     TeacherProfile?
 }
+
+model StudentProfile {
+  id              String  @id @default(cuid())
+  profileId       String  @unique @map("profile_id")
+  username        String  @unique
+  experienceLevel Int     @default(0) @map("experience_level")
+  profile         Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model TeacherProfile {
+  id             String  @id @default(cuid())
+  profileId      String  @unique
+  specialization String
+  favMusicGenre  String? @map("favourite_music_genre")
+  profile        Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
 model UserStats {
-  id String @id @default(cuid()) 
-  userId String @unique @map("user_id")
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  level Int @default(0)
-  xp Float @default(0)
-  lastLogin DateTime @default(now()) @map("last_login")
-  currentStreak Int @default(0) @map("current_streak")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
+  id            String   @id @default(cuid())
+  userId        String   @unique @map("user_id")
+  level         Int      @default(0)
+  xp            Float    @default(0)
+  lastLogin     DateTime @default(now()) @map("last_login")
+  currentStreak Int      @default(0) @map("current_streak")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
 model Subscription {
-  id String @id @default(cuid()) 
-  userId String @unique @map("user_id")
-  user User @relation(fields: [userId], references: [id])
-  planId String @map("plan_id")
-  plan Plan @relation(fields: [planId], references: [id])
-  stripeCustomerId String @map("stripe_customer_id")
-  stripeSubscriptionId String @map("stripe_subscription_id")
-  status SUBSCRIPTION_STATUS
-  currentPeriodStart DateTime @default(now()) @map("current_period_start")
-  cancelAtPeriodEnd DateTime @default(now()) @map("cancel_at_period_end")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                   String              @id @default(cuid())
+  userId               String              @unique @map("user_id")
+  planId               String              @map("plan_id")
+  stripeCustomerId     String              @map("stripe_customer_id")
+  stripeSubscriptionId String              @map("stripe_subscription_id")
+  status               SUBSCRIPTION_STATUS
+  currentPeriodStart   DateTime            @default(now()) @map("current_period_start")
+  cancelAtPeriodEnd    DateTime            @default(now()) @map("cancel_at_period_end")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+  plan                 Plan                @relation(fields: [planId], references: [id])
+  user                 User                @relation(fields: [userId], references: [id])
 }
+
 model Plan {
-  id String  @id @default(cuid()) 
-  type PLAN
-  price Float
-  stripePriceId String @unique @map("stripe_price_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  subscription Subscription[]
+  id            String         @id @default(cuid())
+  type          PLAN
+  price         Float
+  stripePriceId String         @unique @map("stripe_price_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  subscription  Subscription[]
 }
+
 model Song {
-  id String  @id @default(cuid())
-  title String
-  artist String
-  isPremium Boolean @default(true) @map("is_premium")
-  requiredLevel Int @default(1) @map("required_level")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  title         String
+  artist        String
+  isPremium     Boolean  @default(true) @map("is_premium")
+  requiredLevel Int      @default(1) @map("required_level")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 }
+
 model Chat {
-    id String  @id @default(cuid())
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
-    participants User[] @relation("UserChats")
-    messages Message[]
+  id           String    @id @default(cuid())
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  messages     Message[]
+  participants User[]    @relation("UserChats")
 }
+
 model Message {
-  id String @id @default(cuid())
-  content String
-  senderId String @map("sender_id")
-  sender User @relation(fields: [senderId], references: [id])
-  chatId String @map("chat_id")
-  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  isRead Boolean @default(false)
+  id        String   @id @default(cuid())
+  content   String
+  senderId  String   @map("sender_id")
+  chatId    String   @map("chat_id")
+  isRead    Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id])
 }
+
 model Session {
-  id String @id @default(cuid())
-  userId String @map("user_id")
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userAgent String @map("user_agent")
-  ipAddress String @map("ip_address")
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  userAgent String   @map("user_agent")
+  ipAddress String   @map("ip_address")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
 model Campaign {
-  id String @id @default(cuid())
-  source String
-  medium String
-  campaign String
+  id        String   @id @default(cuid())
+  source    String
+  medium    String
+  campaign  String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 }
 
-model PasswordReset{
-  id String @id @default(cuid())
-  email String @unique
-  token String @unique
+model PasswordReset {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-  userId    String @map("user_id")      @unique // @unique wymusza 1:1 (jeden aktywny reset na usera)
+  userId    String   @unique @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
 }
 
 enum Role {
@@ -139,20 +178,24 @@ enum Role {
   ADMIN
   TEACHER
 }
+
 enum EXPERIENCE_LEVEL {
   BEGINNER
   INTERMEDIATE
   ADVANCED
 }
+
 enum PROVIDER {
   GOOGLE
   APPLE
 }
+
 enum PLAN {
   FREE
   STANDARD
   PREMIUM
 }
+
 enum ONBOARDING_STATUS {
   COMPLETE
   NOT_COMPLETE
@@ -160,6 +203,7 @@ enum ONBOARDING_STATUS {
   NOT_STARTED
   IN_PROGRESS
 }
+
 enum SUBSCRIPTION_STATUS {
   ACTIVE
   CANCELED

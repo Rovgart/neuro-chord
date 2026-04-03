@@ -1,10 +1,10 @@
+import { AuthGuard } from '@guards/auth.guard';
 import type { JwtService } from '@nestjs/jwt';
 import { Test, type TestingModule } from '@nestjs/testing';
+import type { PrismaService } from '@prisma/prisma.service';
+import { UsersService } from '@users/users.service';
 import { type DeepMockProxy, mockDeep } from 'jest-mock-extended';
-import type { PrismaService } from 'src/prisma/prisma.service';
-import { UsersService } from 'src/users/users.service';
 import { AuthController } from './auth.controller';
-import { AuthGuard } from './guards/auth.guard';
 
 describe('AuthController', () => {
   let controller: AuthController;

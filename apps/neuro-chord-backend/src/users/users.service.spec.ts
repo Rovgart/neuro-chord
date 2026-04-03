@@ -2,8 +2,8 @@ import { ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { type DeepMockProxy, mockDeep } from 'jest-mock-extended';
+import { PrismaService } from 'src/common/infrastructure/prisma/prisma.service';
 import { Role } from 'src/generated/prisma/enums';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { UsersService } from './users.service';
 
 describe('UsersService', () => {

@@ -1,0 +1,16 @@
+node_modules
+./apps/dist
+.git
+.nx
+./apps/neuro-chord-backend/node_modules
+./apps/neuro-chord-backend/dist
+./apps/neuro-chord-frontend/node_modules
+./apps/neuro-chord-frontend/dist
+./apps/neuro-chord-frontend/.next
+./apps/neuro-chord-frontend/.env.local
+./apps/neuro-chord-frontend/.env.development
+./apps/neuro-chord-frontend/.env.production
+./apps/neuro-chord-frontend/.env.test
+./apps/neuro-chord-frontend/.env.development.local
+./apps/neuro-chord-frontend/.env.production.local
+./apps/neuro-chord-frontend/.env.test.local 
