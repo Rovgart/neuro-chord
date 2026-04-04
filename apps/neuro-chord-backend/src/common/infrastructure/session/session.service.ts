@@ -1,11 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma, Session } from '@prisma/client';
-import { PrismaService } from '@prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { Prisma, Session } from "@prisma/client";
+import { PrismaService } from "@prisma/prisma.service";
 
 interface SessionServiceI {
-  createSession(userId: string, devInfo: { ip: string; ua: string }, tx: Prisma.TransactionClient): Promise<Session>;
+  createSession(
+    userId: string,
+    devInfo: { ip: string; ua: string },
+    tx: Prisma.TransactionClient,
+  ): Promise<Session>;
   deleteSession: (sessionId: string, userId: string) => Promise<void>;
-  getSession(sessionId: string): Promise<{ userId: string; userAgent: string } | null>;
+  getSession(
+    sessionId: string,
+  ): Promise<{ userId: string; userAgent: string } | null>;
 }
 @Injectable()
 export class SessionService implements SessionServiceI {
@@ -29,14 +35,19 @@ export class SessionService implements SessionServiceI {
       where: { id: sessionId, userId },
     });
   }
-  public async getSession(sessionId: string): Promise<{ userId: string; userAgent: string } | null> {
+  public async getSession(sessionId: string) {
     const session = await this.prisma.session.findUnique({
       where: { id: sessionId },
-      select: {
-        userId: true,
-        userAgent: true,
-      },
     });
     return session;
+  }
+  public async updateSession(
+    sessionId: string,
+    data: Partial<Prisma.SessionUpdateInput>,
+  ) {
+    return await this.prisma.session.update({
+      where: { id: sessionId },
+      data,
+    });
   }
 }

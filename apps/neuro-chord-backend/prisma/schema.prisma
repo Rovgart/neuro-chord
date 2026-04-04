@@ -149,6 +149,7 @@ model Session {
   userId    String   @map("user_id")
   userAgent String   @map("user_agent")
   ipAddress String   @map("ip_address")
+  refreshToken String @map("refresh_token") @default("refreshToken")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

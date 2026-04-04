@@ -1,11 +1,11 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document } from "mongoose";
 
 export type UserStatsDocument = UserStats & Document;
 
-@Schema({ 
+@Schema({
   timestamps: true, // Automatyczne createdAt i updatedAt - zbawienne przy debugowaniu
-  collection: 'user_stats' 
+  collection: "user_stats",
 })
 export class UserStats {
   @Prop({ required: true, unique: true, index: true })

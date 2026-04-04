@@ -1,14 +1,17 @@
-import { VERIFY_EMAIL_KEY } from '@decorators/verify-email.decorator';
-import { BadRequestException, CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { PrismaService } from '@prisma/prisma.service';
-import { SecurityService } from '@security/security.service';
+import { VERIFY_EMAIL_KEY } from "@decorators/verify-email.decorator";
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { VerificationService } from "src/common/infrastructure/verifications/verifications.service";
 
 @Injectable()
 export class EmailTokenGuard implements CanActivate {
   constructor(
-    private securityService: SecurityService,
-    private prisma: PrismaService,
+    private verificationService: VerificationService,
     private reflector: Reflector,
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -20,17 +23,12 @@ export class EmailTokenGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest();
     const token = req.query.token;
+    const verifiedUser = await this.verificationService.verifyToken(token);
+    if (!verifiedUser) {
+      throw new UnauthorizedException("User with this token doesn't exist");
+    }
 
-    if (!token) {
-      throw new BadRequestException('Verification token is missing');
-    }
-    const user = await this.prisma.verification.findFirst({
-      where: { token: token },
-    });
-    if (!user) {
-      throw new UnauthorizedException('Invalid or expired token');
-    }
-    req.user = user;
+    req.verifiedUser = verifiedUser;
     return true;
   }
 }

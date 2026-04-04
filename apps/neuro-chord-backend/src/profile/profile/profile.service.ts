@@ -1,13 +1,26 @@
-import { CreateStudentProfileDto, CreateTeacherProfileDto } from '@DTOs/create-profile-dto';
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { Role } from '@prisma/client';
-import { PrismaService } from '@prisma/prisma.service';
-import { UsersService } from '@users/users.service';
-import { PinoLogger } from 'nestjs-pino';
+import {
+  CreateStudentProfileDto,
+  CreateTeacherProfileDto,
+} from "@DTOs/create-profile-dto";
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from "@nestjs/common";
+import { Role } from "@prisma/client";
+import { PrismaService } from "@prisma/prisma.service";
+import { UsersService } from "@users/users.service";
+import { PinoLogger } from "nestjs-pino";
 
 interface ProfileServiceI {
-  createTeachersProfile: (userId: string, teachersProfileData: CreateTeacherProfileDto) => Promise<void>;
-  createStudentsProfile: (userId: string, teachersProfileData: CreateStudentProfileDto) => Promise<void>;
+  createTeachersProfile: (
+    userId: string,
+    teachersProfileData: CreateTeacherProfileDto,
+  ) => Promise<void>;
+  createStudentsProfile: (
+    userId: string,
+    teachersProfileData: CreateStudentProfileDto,
+  ) => Promise<void>;
   deleteProfile: (profileId: string) => Promise<void>;
 }
 @Injectable()
@@ -17,7 +30,10 @@ export class ProfileService implements ProfileServiceI {
     private readonly logger: PinoLogger,
     private readonly userService: UsersService,
   ) {}
-  async createTeachersProfile(userId: string, teachersProfileData: CreateTeacherProfileDto) {
+  async createTeachersProfile(
+    userId: string,
+    teachersProfileData: CreateTeacherProfileDto,
+  ) {
     try {
       await this.prisma.$transaction(async (tx) => {
         const teachersProfile = await tx.profile.create({
@@ -46,10 +62,15 @@ export class ProfileService implements ProfileServiceI {
       });
     } catch (error) {
       this.logger.error("Failed to update teacher's profile", error);
-      throw new InternalServerErrorException("Failed to update teacher's profile");
+      throw new InternalServerErrorException(
+        "Failed to update teacher's profile",
+      );
     }
   }
-  async createStudentsProfile(userId: string, studentProfileData: CreateStudentProfileDto) {
+  async createStudentsProfile(
+    userId: string,
+    studentProfileData: CreateStudentProfileDto,
+  ) {
     try {
       await this.prisma.$transaction(async (tx) => {
         const profile = await tx.profile.create({
@@ -79,7 +100,9 @@ export class ProfileService implements ProfileServiceI {
       });
     } catch (error) {
       this.logger.error("Failed to update student's profile", error);
-      throw new InternalServerErrorException("Failed to update students's profile");
+      throw new InternalServerErrorException(
+        "Failed to update students's profile",
+      );
     }
   }
 
@@ -92,8 +115,8 @@ export class ProfileService implements ProfileServiceI {
         // Triggering service worker for cleaning up s3 storage
       });
     } catch (error) {
-      this.logger.error('Failed to delete profile', error);
-      throw new InternalServerErrorException('Failed to delete profile');
+      this.logger.error("Failed to delete profile", error);
+      throw new InternalServerErrorException("Failed to delete profile");
     }
   }
   async getProfile(userId: string) {

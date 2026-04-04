@@ -1,9 +1,15 @@
-import { Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '@prisma/prisma.service';
-import { SecurityService } from '@security/security.service';
-import { nanoid } from 'nanoid';
-import { PinoLogger } from 'nestjs-pino';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { PrismaService } from "@prisma/prisma.service";
+import { SecurityService } from "@security/security.service";
+import { nanoid } from "nanoid";
+import { PinoLogger } from "nestjs-pino";
+import { getNow } from "src/utils";
 @Injectable()
 export class VerificationService {
   constructor(
@@ -24,15 +30,21 @@ export class VerificationService {
   }
   public async verifyToken(token: string) {
     try {
-      const verificationToken = await this.findToken(token);
-      const now = new Date(Date.now() / 1000);
-      if (verificationToken?.expiresAt < now) {
-        throw new UnauthorizedException('Verification token already expired');
+      const verifiedUser = await this.findToken(token);
+
+      if (!verifiedUser) {
+        throw new UnauthorizedException("Verification token not found");
       }
-      return verificationToken;
+      const now = getNow();
+      const remainingTime =
+        Math.floor(verifiedUser.expiresAt.getTime() / 1000) - now;
+      if (remainingTime <= 0) {
+        throw new UnauthorizedException("Verification token already expired");
+      }
+      return verifiedUser;
     } catch (error) {
-      this.logger.error('Failed to verify token', error);
-      throw new InternalServerErrorException('Failed to verify token');
+      this.logger.error("Failed to verify token", error);
+      throw new InternalServerErrorException("Failed to verify token");
     }
   }
   public async findToken(token: string, tx?: Prisma.TransactionClient) {
@@ -45,12 +57,12 @@ export class VerificationService {
         where: { token },
       });
       if (!verificationToken) {
-        throw new NotFoundException('Verification token no found');
+        throw new NotFoundException("Verification token no found");
       }
       return verificationToken;
     } catch (error) {
-      this.logger.error('Failed to find token', error);
-      throw new Error('Failed to find token ');
+      this.logger.error("Failed to find token", error);
+      throw new Error("Failed to find token ");
     }
   }
   public async deleteToken(token: string, tx?: Prisma.TransactionClient) {
@@ -60,12 +72,20 @@ export class VerificationService {
         where: { token },
       });
     } catch (error) {
-      this.logger.error('Failed to delete verification token', error);
-      throw new InternalServerErrorException('Failed to delete verification token');
+      this.logger.error("Failed to delete verification token", error);
+      throw new InternalServerErrorException(
+        "Failed to delete verification token",
+      );
     }
   }
+  public async deleteVerifiedUser(id: string, tx?: Prisma.TransactionClient) {
+    const client = tx || this.prisma;
+    return await client.verification.delete({
+      where: { id },
+    });
+  }
   public async createVerification(userData: any, token: string) {
-    const hashed = await this.securityService.hashPassword('temp');
+    const hashed = await this.securityService.hashPassword("temp");
     const nowInSec = Math.floor(Date.now() / 1000);
     const expiresAt = nowInSec + 24 * 60 * 60;
     return await this.prisma.verification.create({
@@ -76,7 +96,7 @@ export class VerificationService {
           create: {
             email: userData.email,
             password: hashed,
-            role: 'STUDENT',
+            role: "STUDENT",
           },
         },
       },

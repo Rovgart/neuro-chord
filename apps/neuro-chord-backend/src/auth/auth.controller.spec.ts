@@ -1,12 +1,12 @@
-import { AuthGuard } from '@guards/auth.guard';
-import type { JwtService } from '@nestjs/jwt';
-import { Test, type TestingModule } from '@nestjs/testing';
-import type { PrismaService } from '@prisma/prisma.service';
-import { UsersService } from '@users/users.service';
-import { type DeepMockProxy, mockDeep } from 'jest-mock-extended';
-import { AuthController } from './auth.controller';
+import { AuthGuard } from "@guards/auth.guard";
+import type { JwtService } from "@nestjs/jwt";
+import { Test, type TestingModule } from "@nestjs/testing";
+import type { PrismaService } from "@prisma/prisma.service";
+import { UsersService } from "@users/users.service";
+import { type DeepMockProxy, mockDeep } from "jest-mock-extended";
+import { AuthController } from "./auth.controller";
 
-describe('AuthController', () => {
+describe("AuthController", () => {
   let controller: AuthController;
   let prismaMock: DeepMockProxy<PrismaService>;
   let mockJwt: DeepMockProxy<JwtService>;
@@ -29,7 +29,7 @@ describe('AuthController', () => {
           useValue: mockUsersService,
         },
         {
-          provide: 'AuthGuard',
+          provide: "AuthGuard",
           useValue: { canActivate: jest.fn(() => true) },
         },
       ],
@@ -40,29 +40,29 @@ describe('AuthController', () => {
     controller = module.get<AuthController>(AuthController);
   });
 
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(controller).toBeDefined();
   });
-  it('Should return user profile based on request user id', async () => {
-    const mockUserFromDb = { id: 'user-123', email: 'someuser@gmail.com' };
+  it("Should return user profile based on request user id", async () => {
+    const mockUserFromDb = { id: "user-123", email: "someuser@gmail.com" };
     const mockRequest = {
       user: {
-        id: 'user-123',
-        sub: 'user-123',
+        id: "user-123",
+        sub: "user-123",
       },
     };
     mockUsersService.getProfile.mockResolvedValue(mockUserFromDb);
     const result = await controller.getProfile(mockRequest as any);
-    expect(mockUsersService.getProfile).toHaveBeenCalledWith('user-123');
+    expect(mockUsersService.getProfile).toHaveBeenCalledWith("user-123");
     expect(result).toEqual(mockUserFromDb);
   });
-  it('should return user id ', async () => {
+  it("should return user id ", async () => {
     const mockBody = {
-      email: 'someemail@wp.pl',
-      password: 'pass123',
+      email: "someemail@wp.pl",
+      password: "pass123",
     };
     const mockResponse = {
-      accessToken: 'asdfdsaf12wd',
+      accessToken: "asdfdsaf12wd",
     };
     mockUsersService.loginUser.mockResolvedValue(mockResponse);
     const result = controller.login(req, res, userData);

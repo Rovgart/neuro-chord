@@ -1,24 +1,25 @@
-import { LoginUserDto } from '@DTOs/login-user-dto';
-import { RegisterUserDto } from '@DTOs/register-user.dto';
-import { MailerCustomService } from '@mailer/mailer.service';
+import { LoginUserDto } from "@DTOs/login-user-dto";
+import { RegisterUserDto } from "@DTOs/register-user.dto";
+import { MailerCustomService } from "@mailer/mailer.service";
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Role } from '@prisma/client';
-import { PrismaService } from '@prisma/prisma.service';
-import { RedisService } from '@redis/redis.service';
-import { SecurityService } from '@security/security.service';
-import { SessionService } from '@session/session.service';
-import { UsersService } from '@users/users.service';
-import { nanoid } from 'nanoid';
-import { PinoLogger } from 'nestjs-pino';
-import { VerificationService } from 'src/common/infrastructure/verifications/verifications.service';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Role } from "@prisma/client";
+import { PrismaService } from "@prisma/prisma.service";
+import { RedisService } from "@redis/redis.service";
+import { SecurityService } from "@security/security.service";
+import { SessionService } from "@session/session.service";
+import { UsersService } from "@users/users.service";
+import { nanoid } from "nanoid";
+import { PinoLogger } from "nestjs-pino";
+import { VerificationService } from "src/common/infrastructure/verifications/verifications.service";
+import { getNow } from "src/utils";
+import { JwtPayload } from "./interfaces/jwt-payload.interface";
 
 @Injectable()
 export class AuthService {
@@ -33,69 +34,135 @@ export class AuthService {
     private readonly verificationService: VerificationService,
     private logger: PinoLogger,
   ) {
-    const check = this.configService.get('SALT_ROUNDS');
-    const front_url = this.configService.get('FRONTEND_URL');
-    console.log('--- TEST CONFIG SERVICE ---', {
+    const check = this.configService.get("SALT_ROUNDS");
+    const front_url = this.configService.get("FRONTEND_URL");
+    console.log("--- TEST CONFIG SERVICE ---", {
       val: check,
       type: typeof check,
-      all: this.configService.get('POSTGRES_DB_URL') ? 'OK' : 'MISSING',
+      all: this.configService.get("POSTGRES_DB_URL") ? "OK" : "MISSING",
       front: front_url,
     });
   }
 
   public async registerUser(userData: RegisterUserDto) {
     await this.userService.verifyUser(userData.email);
+    const hashed = await this.securityService.hashPassword(userData.password);
     const result = await this.prisma.$transaction(async (tx) => {
-      const tempUser = await this.userService.createTempUser(userData.email, userData.password, tx);
-      const verificationToken = await this.verificationService.createToken(tempUser.id, tx);
+      const tempUser = await this.userService.createTempUser(
+        userData.email,
+        hashed,
+        tx,
+      );
+      const verificationToken = await this.verificationService.createToken(
+        tempUser.id,
+        tx,
+      );
       return { tempUser, verificationToken };
     });
-    await this.mailer.sendVerificationEmail(result?.tempUser, result?.verificationToken.token);
-    return { message: 'Verification link sent to your email' };
+    await this.mailer.sendVerificationEmail(
+      result?.tempUser,
+      result?.verificationToken.token,
+    );
+    return { message: "Verification link sent to your email" };
   }
-  public async authenticateUser(token: string, deviceInfo: { ip: string; ua: string }) {
-    if (!token) {
-      throw new BadRequestException('Token is required');
-    }
-
-    return await this.prisma.$transaction(async (tx) => {
-      const userToVerify = await this.verificationService.findToken(token, tx);
-      if (!userToVerify) {
-        throw new BadRequestException('Invalid or expired email verification token');
-      }
-      const updatedUser = await this.userService.updateStudent(userToVerify.id, { isVerified: true }, tx);
-      if (!updatedUser) {
-        throw new Error('Failed to update student');
-      }
-      const session = await this.sessionService.createSession(userToVerify.userId, deviceInfo, tx);
-      const tokens = await this.securityService.generateTokens({
-        sub: updatedUser.id,
-        email: updatedUser?.email,
-        role: Role.STUDENT,
-        isVerified: false,
-        sid: session.id,
+  public async authenticateUser(
+    verifiedUser: any,
+    deviceInfo: { ip: string; ua: string },
+  ) {
+    try {
+      console.log(verifiedUser);
+      const trans = await this.prisma.$transaction(async (tx) => {
+        const updatedUser = await this.userService.updateStudent(
+          verifiedUser.userId,
+          { isVerified: true },
+          tx,
+        );
+        if (!updatedUser) {
+          throw new Error("Failed to update student");
+        }
+        const session = await this.sessionService.createSession(
+          verifiedUser.userId,
+          deviceInfo,
+          tx,
+        );
+        const tokens = await this.securityService.generateTokens({
+          sub: updatedUser.id,
+          email: updatedUser?.email,
+          role: Role.STUDENT,
+          isVerified: false,
+          sid: session.id,
+        });
+        await this.verificationService.deleteVerifiedUser(verifiedUser.id, tx);
+        return tokens;
       });
-      await this.verificationService.deleteToken(token);
-      return tokens;
+      return trans;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  async refreshTokens(refreshToken: JwtPayload) {
+    // Veryfy if sid exists in db, just compare
+    const session = await this.sessionService.getSession(refreshToken.sid);
+    if (!session) {
+      throw new UnauthorizedException("Session doesn't exist for that user");
+    }
+    // Retrieve current user from db
+    const user = await this.userService.findById(refreshToken.sub);
+    if (!user || !user.isVerified) {
+      throw new UnauthorizedException("User no longer active or verified");
+    }
+    const newPayload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      sid: session.id,
+      role: user.role,
+      isVerified: user.isVerified,
+    };
+
+    // Create new pair of accessToken and refreshToken
+    const newTokens = await this.securityService.generateTokens(newPayload);
+
+    // Update session with new refreshToken
+    await this.sessionService.updateSession(session.id, {
+      refreshToken: newTokens.refreshToken,
     });
+    // Put old refresh token into Redis
+    const now = getNow();
+    const remainingTime = Number(refreshToken.exp) - now;
+    if (remainingTime > 0) {
+      await this.redisService.setWithExpiry(
+        `bl_ref:${refreshToken.sid}`,
+        "true",
+        remainingTime,
+      );
+    }
+    return newTokens;
   }
   async loginUser(userData: LoginUserDto, devInfo: { ip: string; ua: string }) {
     if (!userData.email || !userData.password) {
-      throw new UnauthorizedException('Email and password are required');
+      throw new UnauthorizedException("Email and password are required");
     }
 
     const user = await this.userService.findByEmail(userData.email);
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    if (!user) throw new UnauthorizedException("Invalid credentials");
     const storedPassword = user.password;
     if (!storedPassword) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
-    const isPasswordValid = await this.securityService.comparePasswords(userData.password, storedPassword);
+    const isPasswordValid = await this.securityService.comparePasswords(
+      userData.password,
+      storedPassword,
+    );
 
-    if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
+    if (!isPasswordValid)
+      throw new UnauthorizedException("Invalid credentials");
 
     return await this.prisma.$transaction(async (tx) => {
-      const session = await this.sessionService.createSession(user.id, devInfo, tx);
+      const session = await this.sessionService.createSession(
+        user.id,
+        devInfo,
+        tx,
+      );
       const payload: JwtPayload = {
         sub: user.id,
         email: user.email,
@@ -103,7 +170,8 @@ export class AuthService {
         role: user.role,
         sid: session.id,
       };
-      const { refreshToken, accessToken } = await this.securityService.generateTokens(payload);
+      const { refreshToken, accessToken } =
+        await this.securityService.generateTokens(payload);
       return {
         accessToken,
         refreshToken,
@@ -127,11 +195,18 @@ export class AuthService {
       const payload = { id: user.id, email: user.email };
       const uniqueToken = nanoid();
 
-      await this.redisService.setWithExpiry(`password-reset:${uniqueToken}`, payload.id, 15 * 60);
+      await this.redisService.setWithExpiry(
+        `password-reset:${uniqueToken}`,
+        payload.id,
+        15 * 60,
+      );
       return uniqueToken;
     } catch (error) {
-      this.logger.error('Failed to init recover password process', error);
-      throw new InternalServerErrorException('Failed to init recover password process', error);
+      this.logger.error("Failed to init recover password process", error);
+      throw new InternalServerErrorException(
+        "Failed to init recover password process",
+        error,
+      );
     }
   }
   async checkEmailAvailability(email: string) {
@@ -140,9 +215,11 @@ export class AuthService {
   }
   async resetPassword(token: string, password: string) {
     const hashed = await this.securityService.hashPassword(password);
-    const userId = await this.redisService.getPasswordReset(`password-reset:${token}`);
+    const userId = await this.redisService.getPasswordReset(
+      `password-reset:${token}`,
+    );
     if (!userId) {
-      throw new BadRequestException('Invalid or expired password reset token');
+      throw new BadRequestException("Invalid or expired password reset token");
     }
     await this.userService.updateStudent(userId, { password: hashed });
     await this.redisService.del(`password-reset:${token}`);
@@ -150,21 +227,35 @@ export class AuthService {
   async fullLogout(user: JwtPayload, token: string) {
     // I need some kind of decorator and guard before that happen
     await this.sessionService.deleteSession(user.sub, user.sid);
-    await this.redisService.setWithExpiry(`bl_acc:${token}`, 'true', 15 * 60);
+    await this.redisService.setWithExpiry(`bl_acc:${token}`, "true", 15 * 60);
   }
   public async verifyEmail(token: string, devInfo: { ip: string; ua: string }) {
     return await this.prisma.$transaction(async (tx) => {
       const userToVerify = await this.verificationService.findToken(token);
       await this.verificationService.verifyToken(token);
-      const user = await this.userService.updateStudent(userToVerify.userId, { isVerified: false, role: Role.STUDENT });
+      const user = await this.userService.updateStudent(userToVerify.userId, {
+        isVerified: false,
+        role: Role.STUDENT,
+      });
       if (!user.password) {
-        throw new UnauthorizedException('Lack of password');
+        throw new UnauthorizedException("Lack of password");
       }
-      const session = await this.sessionService.createSession(user.id, devInfo, tx);
+      const session = await this.sessionService.createSession(
+        user.id,
+        devInfo,
+        tx,
+      );
       const existingUser = await this.userService.findByEmail(user.email);
-      if (existingUser) throw new BadRequestException('User with this email address already exists');
+      if (existingUser)
+        throw new BadRequestException(
+          "User with this email address already exists",
+        );
 
-      const newUser = await this.userService.createStudent(user.email, user?.password, tx);
+      const newUser = await this.userService.createStudent(
+        user.email,
+        user?.password,
+        tx,
+      );
       const payload: JwtPayload = {
         sub: newUser.id,
         email: newUser.email,

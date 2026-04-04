@@ -1,12 +1,12 @@
-import { ConflictException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { Test, type TestingModule } from '@nestjs/testing';
-import { type DeepMockProxy, mockDeep } from 'jest-mock-extended';
-import { PrismaService } from 'src/common/infrastructure/prisma/prisma.service';
-import { Role } from 'src/generated/prisma/enums';
-import { UsersService } from './users.service';
+import { ConflictException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { Test, type TestingModule } from "@nestjs/testing";
+import { type DeepMockProxy, mockDeep } from "jest-mock-extended";
+import { PrismaService } from "src/common/infrastructure/prisma/prisma.service";
+import { Role } from "src/generated/prisma/enums";
+import { UsersService } from "./users.service";
 
-describe('UsersService', () => {
+describe("UsersService", () => {
   let service: UsersService;
   let prismaMock: DeepMockProxy<PrismaService>;
   let jwtMock: DeepMockProxy<JwtService>;
@@ -23,32 +23,34 @@ describe('UsersService', () => {
     }).compile();
     service = module.get(UsersService);
   });
-  it('should be defined', () => {
+  it("should be defined", () => {
     expect(service).toBeDefined();
   });
-  it('should throw ConflictException if user already exists ', async () => {
-    const registerDto = { email: 'pajalok@wp.pl', password: 'paja123#' };
+  it("should throw ConflictException if user already exists ", async () => {
+    const registerDto = { email: "pajalok@wp.pl", password: "paja123#" };
     prismaMock.user.findUnique.mockResolvedValue({
-      id: 'existing-id',
-      email: 'pajalok@wp.pl',
-      password: 'paja123#',
-      role: 'STUDENT',
+      id: "existing-id",
+      email: "pajalok@wp.pl",
+      password: "paja123#",
+      role: "STUDENT",
       onboardingComplete: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    await expect(service.registerUser(registerDto as any)).rejects.toThrow(ConflictException);
+    await expect(service.registerUser(registerDto as any)).rejects.toThrow(
+      ConflictException,
+    );
   });
-  it('should create a user on success', async () => {
-    const registerDto = { email: 'new@wp.pl', password: 'password123' };
+  it("should create a user on success", async () => {
+    const registerDto = { email: "new@wp.pl", password: "password123" };
 
     prismaMock.user.findUnique.mockResolvedValue(null);
 
     const expectedUser = {
-      id: 'new-cuid',
-      email: 'newuser',
-      password: 'newuser',
+      id: "new-cuid",
+      email: "newuser",
+      password: "newuser",
       role: Role.STUDENT,
       onboardingComplete: false,
       createdAt: new Date(),
@@ -61,13 +63,13 @@ describe('UsersService', () => {
     expect(result).toEqual(expectedUser);
     expect(prismaMock.user.create).toHaveBeenCalled();
   });
-  it('should complete profile ', async () => {
-    const userId = 'user-123';
-    const completeProfileMockDto = { username: 'JacuśHot40' };
+  it("should complete profile ", async () => {
+    const userId = "user-123";
+    const completeProfileMockDto = { username: "JacuśHot40" };
     const expectedProfile = {
-      id: 'new-cuid',
+      id: "new-cuid",
       userId,
-      displayName: 'JacuśHot40',
+      displayName: "JacuśHot40",
       ...completeProfileMockDto,
     };
     await prismaMock.$transaction.mockImplementation(async (transact: any) => {
@@ -79,7 +81,7 @@ describe('UsersService', () => {
     expect(prismaMock.profile.create).toHaveBeenCalledWith({
       data: {
         userId,
-        displayName: 'JacuśHot40',
+        displayName: "JacuśHot40",
         ...completeProfileMockDto,
       },
     });

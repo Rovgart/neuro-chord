@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { SecurityModule } from '@security/security.module';
-import { VerificationService } from './verifications.service';
+import { Module } from "@nestjs/common";
+import { SecurityModule } from "@security/security.module";
+import { VerificationService } from "./verifications.service";
 
 @Module({
   imports: [SecurityModule],
