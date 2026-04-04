@@ -68,8 +68,8 @@ export default function RegisterForm() {
                   }
                 }
               } catch (error) {
-                console.error('Failed to authorize', error);
                 setError('email', { type: 'manual', message: 'Bad request' });
+                throw new Error('Failed to authorize', error?.message);
               }
             }}
           />

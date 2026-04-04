@@ -1,12 +1,9 @@
-import RegisterForm from '@/components/forms/RegisterForm'
-import React from 'react'
+import RegisterForm from '@/components/forms/RegisterForm';
 
-type Props = {}
+type Props = {};
 
 function Page({}: Props) {
-  return (
-    <RegisterForm/>
-  )
+  return <RegisterForm />;
 }
 
-export default Page
+export default Page;

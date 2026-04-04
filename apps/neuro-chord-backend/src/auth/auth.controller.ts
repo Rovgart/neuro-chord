@@ -54,7 +54,6 @@ export class AuthController {
   @Post('logout')
   @ApiBearerAuth('access-token')
   async logout(@CurrentUser() user: any, @RawToken() token: string, @Res({ passthrough: true }) res: any) {
-    console.log('If i can turn the time', user);
     await this.authService.fullLogout(user, token);
     res.clearCookie('refresh_token');
     return { message: 'Logged out successfully' };
@@ -104,7 +103,6 @@ export class AuthController {
     @RefreshTokenData() refreshTokenData: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    console.log(refreshTokenData);
     const tokens = await this.authService.refreshTokens(refreshTokenData);
     res.cookie('refresh', tokens.refreshToken, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -115,8 +113,9 @@ export class AuthController {
     });
     return { accessToken: tokens.accessToken };
   }
-  @Post('check-email-availability')
-  async checkEmail(@Query('email') query: CheckEmailDTO) {
+  @Public()
+  @Get('check-email-availability') // Zmieniamy na GET - to operacja odczytu (Idempotent)
+  async checkEmail(@Query() query: CheckEmailDTO) {
     return this.authService.checkEmailAvailability(query.email);
   }
   @Post('verify-email')

@@ -144,7 +144,8 @@ export class AuthService {
     return pin;
   }
   async checkEmailAvailability(email: string) {
-    const user = this.userService.findByEmail(email);
+    console.log(email);
+    const user = await this.userService.findByEmail(email);
     return { isAvailable: !user };
   }
   async generateResetPasswordToken(email: string) {

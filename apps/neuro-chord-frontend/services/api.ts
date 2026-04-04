@@ -71,8 +71,8 @@ export const neuroapi = createApi({
     }),
     checkEmail: builder.query({
       query: (email) => ({
-        url: `auth?email=${email}`,
-        method: 'POST',
+        url: `auth/check-email-availability?email=${email}`,
+        method: 'GET',
       }),
     }),
     refreshToken: builder.query({
