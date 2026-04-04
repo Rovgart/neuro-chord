@@ -1,9 +1,9 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsString, MinLength } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString, MinLength } from 'class-validator';
 
 export class ResetPasswordDto {
   @ApiProperty()
   @IsString()
-  @MinLength(8, { message: "Hasło musi mieć co najmniej 8 znaków" })
-  newPassword: string;
+  @MinLength(8, { message: 'Password must have at least 8 characters' })
+  pass: string;
 }

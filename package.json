@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "dev": "bun --filter '*' dev",
-    "build": "bun --filter '*' build"
+    "build": "bun --filter '*' build",
+    "start:dev": "nest start --watch "
   },
   "workspaces": [
     "apps/*"

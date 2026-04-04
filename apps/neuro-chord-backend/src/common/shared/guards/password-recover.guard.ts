@@ -1,40 +1,15 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from "@nestjs/common";
-import { Logger } from "nestjs-pino";
-import { RedisService } from "src/common/infrastructure/redis/redis.service";
+import { BadRequestException, CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { extractTokenFromCookie } from 'src/utils';
 
 @Injectable()
 export class PasswordRecoverGuard implements CanActivate {
-  constructor(
-    private redis: RedisService,
-    private logger: Logger,
-  ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    const token = req.query.token;
-    if (!token) {
-      throw new UnauthorizedException("No password reset token provided");
+    const resetToken = extractTokenFromCookie('RESET', req);
+    if (!resetToken) {
+      throw new BadRequestException("Reset token wasn't provided");
     }
-    try {
-      const userId = await this.redis.getPasswordReset(
-        `password-reset:${token}`,
-      );
-      if (!userId) {
-        throw new UnauthorizedException(
-          "No user found for this password reset token",
-        );
-      }
-      req.userInternalId = userId;
-      return true;
-    } catch (error) {
-      this.logger.error("Invalid or expired password reset token", error);
-      throw new UnauthorizedException(
-        "Invalid or expired password reset token",
-      );
-    }
+    req.resetPasswordToken = resetToken;
+    return true;
   }
 }

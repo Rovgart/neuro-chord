@@ -1,17 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { Prisma, Session } from "@prisma/client";
-import { PrismaService } from "@prisma/prisma.service";
+import { Injectable } from '@nestjs/common';
+import { Prisma, Session } from '@prisma/client';
+import { PrismaService } from '@prisma/prisma.service';
 
 interface SessionServiceI {
-  createSession(
-    userId: string,
-    devInfo: { ip: string; ua: string },
-    tx: Prisma.TransactionClient,
-  ): Promise<Session>;
+  createSession(userId: string, devInfo: { ip: string; ua: string }, tx: Prisma.TransactionClient): Promise<Session>;
   deleteSession: (sessionId: string, userId: string) => Promise<void>;
-  getSession(
-    sessionId: string,
-  ): Promise<{ userId: string; userAgent: string } | null>;
+  getSession(sessionId: string): Promise<{ userId: string; userAgent: string } | null>;
 }
 @Injectable()
 export class SessionService implements SessionServiceI {
@@ -41,13 +35,17 @@ export class SessionService implements SessionServiceI {
     });
     return session;
   }
-  public async updateSession(
-    sessionId: string,
-    data: Partial<Prisma.SessionUpdateInput>,
-  ) {
+  public async updateSession(sessionId: string, data: Partial<Prisma.SessionUpdateInput>) {
     return await this.prisma.session.update({
       where: { id: sessionId },
       data,
     });
+  }
+  public async revokeAllUsersActiveSessions(userId: string, tx?: Prisma.TransactionClient) {
+    const client = this.prisma || tx;
+    if (!userId) {
+      throw new Error("UserId wasn't provided");
+    }
+    await client.session.deleteMany({ where: { userId } });
   }
 }

@@ -1,10 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from "@nestjs/common";
-import { Prisma, Role } from "@prisma/client";
-import { PrismaService } from "@prisma/prisma.service";
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Prisma, Role } from '@prisma/client';
+import { PrismaService } from '@prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
@@ -12,12 +8,7 @@ export class UsersService {
   public async findAll() {
     return this.prisma.user.findMany();
   }
-  private async createUser(
-    email: string,
-    password: string,
-    role?: Role,
-    tx?: Prisma.TransactionClient,
-  ) {
+  private async createUser(email: string, password: string, role?: Role, tx?: Prisma.TransactionClient) {
     const client = tx || this.prisma;
     const user = await client.user.create({
       data: {
@@ -36,51 +27,27 @@ export class UsersService {
     const client = tx || this.prisma;
     return await client.user.update({ where, data });
   }
-  public async updateStudent(
-    id: string,
-    data: Partial<Prisma.UserUpdateInput>,
-    tx?: Prisma.TransactionClient,
-  ) {
+  public async updateStudent(id: string, data: Partial<Prisma.UserUpdateInput>, tx?: Prisma.TransactionClient) {
     return this.updateUser({ id }, { ...data, role: Role.STUDENT }, tx);
   }
 
-  public async updateTeacher(
-    id: string,
-    data: Partial<Prisma.UserUpdateInput>,
-    tx?: Prisma.TransactionClient,
-  ) {
+  public async updateTeacher(id: string, data: Partial<Prisma.UserUpdateInput>, tx?: Prisma.TransactionClient) {
     return this.updateUser({ id }, { ...data, role: Role.TEACHER }, tx);
   }
 
   public async promoteToAdmin(id: string, tx?: Prisma.TransactionClient) {
     return this.updateUser({ id }, { role: Role.ADMIN }, tx);
   }
-  public async createTeacher(
-    email: string,
-    password: string,
-    tx?: Prisma.TransactionClient,
-  ) {
+  public async createTeacher(email: string, password: string, tx?: Prisma.TransactionClient) {
     return await this.createUser(email, password, Role.TEACHER, tx);
   }
-  public async createAdmin(
-    email: string,
-    password: string,
-    tx?: Prisma.TransactionClient,
-  ) {
+  public async createAdmin(email: string, password: string, tx?: Prisma.TransactionClient) {
     return await this.createUser(email, password, Role.ADMIN, tx);
   }
-  public async createStudent(
-    email: string,
-    password: string,
-    tx?: Prisma.TransactionClient,
-  ) {
+  public async createStudent(email: string, password: string, tx?: Prisma.TransactionClient) {
     return await this.createUser(email, password, Role.STUDENT, tx);
   }
-  public async createTempUser(
-    email: string,
-    password: string,
-    tx?: Prisma.TransactionClient,
-  ) {
+  public async createTempUser(email: string, password: string, tx?: Prisma.TransactionClient) {
     return await this.createUser(email, password, Role.STUDENT, tx);
   }
   private async find(
@@ -95,19 +62,11 @@ export class UsersService {
     });
   }
 
-  public async findByEmail(
-    email: string,
-    tx?: Prisma.TransactionClient,
-    includeSessions: boolean = false,
-  ) {
+  public async findByEmail(email: string, includeSessions: boolean = false, tx?: Prisma.TransactionClient) {
     return await this.find({ email }, tx, includeSessions);
   }
 
-  public async findById(
-    id: string,
-    tx?: Prisma.TransactionClient,
-    includeSessions: boolean = true,
-  ) {
+  public async findById(id: string, tx?: Prisma.TransactionClient, includeSessions: boolean = true) {
     return await this.find({ id }, tx, includeSessions);
   }
 
@@ -147,7 +106,10 @@ export class UsersService {
       where: { email },
     });
     if (isExisting) {
-      throw new BadRequestException("User with this e-mail already exists");
+      throw new BadRequestException('User with this e-mail already exists');
     }
+  }
+  public async updateNewPassword(userId: string, newPassword: string) {
+    await this.updateUser({ id: userId }, { password: newPassword });
   }
 }
