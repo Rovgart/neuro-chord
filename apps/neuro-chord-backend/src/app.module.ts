@@ -1,48 +1,50 @@
-import { AuthModule } from "@auth/auth.module";
-import { AllExceptionsFilter } from "@filters/all-exceptions.filter";
-import { AuthGuard } from "@guards/auth.guard";
-import { MetadataInterceptor } from "@interceptors/metadata.interceptor";
-import { MailerModule } from "@mailer/mailer.module";
-import { MailerModule as NestMailerModule } from "@nestjs-modules/mailer";
-import { HandlebarsAdapter } from "@nestjs-modules/mailer/adapters/handlebars.adapter";
-import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
-import { EventEmitterModule } from "@nestjs/event-emitter";
-import { JwtModule } from "@nestjs/jwt";
-import { PrismaModule } from "@prisma/prisma.module";
-import { RedisModule } from "@redis/redis.module";
-import { StatsModule } from "@stats/stats.module";
-import {
-  makeCounterProvider,
-  PrometheusModule,
-} from "@willsoto/nestjs-prometheus";
-import { LoggerModule } from "nestjs-pino";
-import { join } from "node:path";
-import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
-import { SecurityModule } from "./common/infrastructure/security/security.module";
-import { SecurityService } from "./common/infrastructure/security/security.service";
+import { AuthModule } from '@auth/auth.module';
+import { AllExceptionsFilter } from '@filters/all-exceptions.filter';
+import { AuthGuard } from '@guards/auth.guard';
+import { MetadataInterceptor } from '@interceptors/metadata.interceptor';
+import { MailerModule } from '@mailer/mailer.module';
+import { MailerModule as NestMailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.adapter';
+import { CacheModule } from '@nestjs/cache-manager';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { JwtModule } from '@nestjs/jwt';
+import { PrismaModule } from '@prisma/prisma.module';
+import { RedisModule } from '@redis/redis.module';
+import { StatsModule } from '@stats/stats.module';
+import { makeCounterProvider, PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { LoggerModule } from 'nestjs-pino';
+import { join } from 'node:path';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { SecurityModule } from './common/infrastructure/security/security.module';
+import { SecurityService } from './common/infrastructure/security/security.service';
 @Module({
   imports: [
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 60,
+    }),
     JwtModule,
     PrometheusModule.register({
-      path: "/metrics",
+      path: '/metrics',
     }),
     NestMailerModule.forRoot({
       transport: {
-        host: "localhost",
+        host: 'localhost',
         port: 1025,
         auth: {
-          user: "",
-          pass: "",
+          user: '',
+          pass: '',
         },
       },
       defaults: {
-        from: "No reply <no-reply@example.com>",
+        from: 'No reply <no-reply@example.com>',
       },
       template: {
-        dir: join(process.cwd(), "src", "templates"),
+        dir: join(process.cwd(), 'src', 'templates'),
         options: {
           strict: true,
         },
@@ -53,12 +55,12 @@ import { SecurityService } from "./common/infrastructure/security/security.servi
     LoggerModule.forRoot({
       pinoHttp: {
         transport:
-          process.env.NODE_ENV !== "production"
+          process.env.NODE_ENV !== 'production'
             ? {
-                target: "pino-pretty",
+                target: 'pino-pretty',
                 options: {
                   colorize: true,
-                  translateTime: "SYS:standard",
+                  translateTime: 'SYS:standard',
                   singleLine: true,
                   levelFirst: true,
                 },
@@ -92,14 +94,14 @@ import { SecurityService } from "./common/infrastructure/security/security.servi
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_INTERCEPTOR, useClass: MetadataInterceptor },
     makeCounterProvider({
-      name: "mongo_errors_total",
-      help: "Total number of MongoDB errors",
-      labelNames: ["event_name", "error_code"],
+      name: 'mongo_errors_total',
+      help: 'Total number of MongoDB errors',
+      labelNames: ['event_name', 'error_code'],
     }),
     makeCounterProvider({
-      name: "http_errors_total",
-      help: "Total number of HTTP errors",
-      labelNames: ["status", "method", "path"],
+      name: 'http_errors_total',
+      help: 'Total number of HTTP errors',
+      labelNames: ['status', 'method', 'path'],
     }),
     SecurityService,
   ],

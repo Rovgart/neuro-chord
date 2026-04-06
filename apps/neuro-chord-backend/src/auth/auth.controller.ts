@@ -15,7 +15,8 @@ import { PasswordRecoverGuard } from '@guards/password-recover.guard';
 import { PinGuard } from '@guards/pin.guard';
 import { JwtRefreshGuard } from '@guards/refresh.guard';
 import { EmailTokenGuard } from '@guards/verify-email.guard';
-import { Body, Controller, Get, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
+import { Body, Controller, Get, Post, Query, Req, Res, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import type { Request, Response } from 'express';
@@ -90,6 +91,7 @@ export class AuthController {
     return { message: 'Password successfully updated' };
   }
   @Get('me')
+  @UseInterceptors(CacheInterceptor)
   @AuthProtection(Role.STUDENT, Role.TEACHER)
   async getMe(@CurrentUser() user: any) {
     return user;
@@ -114,7 +116,7 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
   @Public()
-  @Get('check-email-availability') // Zmieniamy na GET - to operacja odczytu (Idempotent)
+  @Get('check-email-availability')
   async checkEmail(@Query() query: CheckEmailDTO) {
     return this.authService.checkEmailAvailability(query.email);
   }

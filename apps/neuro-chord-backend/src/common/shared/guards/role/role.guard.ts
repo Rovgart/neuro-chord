@@ -1,12 +1,7 @@
-import { ROLE_KEY } from "@decorators/auth.decorator";
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-} from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
-import { Role } from "@prisma/client";
+import { ROLE_KEY } from '@decorators/auth.decorator';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
@@ -16,17 +11,13 @@ export class RoleGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    console.log(requiredRoles);
     if (!requiredRoles) {
       return true;
     }
     const req = context.switchToHttp().getRequest();
-    console.log(req.metadata);
     const hasRole = requiredRoles.some((role) => role === req.user.role);
     if (!hasRole) {
-      throw new ForbiddenException(
-        "You don't have permission to perform that action",
-      );
+      throw new ForbiddenException("You don't have permission to perform that action");
     }
 
     return true;

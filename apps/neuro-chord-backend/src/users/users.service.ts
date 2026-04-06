@@ -70,34 +70,6 @@ export class UsersService {
     return await this.find({ id }, tx, includeSessions);
   }
 
-  // public async createUserTransaction(userData: any, devInfo: { ip: string | string[]; ua: string }) {
-  //   return await this.prisma.$transaction(async (tx) => {
-  //     const existingUser = await this.findById('ID',,tx);
-  //     if (existingUser) throw new ConflictException('User with this email address already exists');
-  //     const hashed = await this.securityService.hashPassword(userData.password);
-  //     const newUser = await this.prisma.user.create({
-  //       data: {
-  //         email: userData.email,
-  //         password: hashed,
-  //         role: 'STUDENT',
-  //       },
-  //     });
-  //     const tokens = await this.securityService.generateTokens({
-  //       sub: newUser.id,
-  //       email: newUser.email,
-  //       role: newUser.role,
-  //       isVerified: newUser.isVerified,
-  //       sid:
-  //     });
-  //     await tx.session.create({
-  //       data: {
-  //         userAgent: devInfo.ua,
-  //         ipAddress: devInfo.ip as string,
-  //         userId: newUser.id,
-  //       },
-  //     });
-  //   });
-  // }
   public async verifyUser(email: string) {
     if (!email) {
       throw new UnauthorizedException("Email wasn't provided");
