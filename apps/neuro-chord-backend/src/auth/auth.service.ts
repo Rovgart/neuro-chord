@@ -144,7 +144,6 @@ export class AuthService {
     return pin;
   }
   async checkEmailAvailability(email: string) {
-    console.log(email);
     const user = await this.userService.findByEmail(email);
     return { isAvailable: !user };
   }

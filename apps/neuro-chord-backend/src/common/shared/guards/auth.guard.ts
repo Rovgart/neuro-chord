@@ -27,7 +27,8 @@ export class AuthGuard implements CanActivate {
     if (request.url === '/metrics') {
       return true;
     }
-    const token = this.extractTokenFromHeader(request);
+    const token = this.extractTokenFromCookie(request);
+    console.log(token);
     const cacheKey = `auth_val:${token}`;
     const cachedUser = await this.cache.get(cacheKey);
     if (cachedUser) {
@@ -54,9 +55,8 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 
-  private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
+  private extractTokenFromCookie(request: Request): string | undefined {
+    return request.cookies?.access_token;
   }
   private attachMetadata(request: any) {
     request.metadata = {

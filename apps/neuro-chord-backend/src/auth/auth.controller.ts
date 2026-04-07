@@ -39,24 +39,40 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @Body() userData: LoginUserDto,
   ) {
-    const user = await this.authService.loginUser(userData, {
+    const { accessToken, refreshToken } = await this.authService.loginUser(userData, {
       ip: metadata.ip,
       ua: metadata.userAgent,
     });
-    res?.cookie('refresh_token', user.refreshToken, {
+    res?.cookie('access_token', accessToken, {
+      maxAge: 1 * 24 * 60 * 60 * 1000,
+      sameSite: 'strict',
+      secure: false,
+      httpOnly: true,
+      path: '/',
+    });
+    res?.cookie('refresh_token', refreshToken, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       sameSite: 'strict',
       secure: false,
       httpOnly: true,
     });
-    return { message: 'User succesfully logged in', ...user };
+    return { message: 'User succesfully logged in' };
   }
 
   @Post('logout')
-  @ApiBearerAuth('access-token')
-  async logout(@CurrentUser() user: any, @RawToken() token: string, @Res({ passthrough: true }) res: any) {
+  async logout(@CurrentUser() user: any, @RawToken() token: string, @Res({ passthrough: true }) res: Response) {
     await this.authService.fullLogout(user, token);
-    res.clearCookie('refresh_token');
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'strict' as const,
+      path: '/',
+    };
+
+    res.clearCookie('access_token', cookieOptions);
+    res.clearCookie('refresh_token', cookieOptions);
+
     return { message: 'Logged out successfully' };
   }
   @Public()
@@ -106,10 +122,10 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const tokens = await this.authService.refreshTokens(refreshTokenData);
-    res.cookie('refresh', tokens.refreshToken, {
+    res.cookie('refresh_token', tokens.refreshToken, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      secure: true,
+      secure: false,
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'none',
       path: '/auth/refresh',
     });
