@@ -14,7 +14,6 @@ export class MailerCustomService {
   }
   async sendWelcomeEmail(user: any) {
     try {
-      console.log('Sending welcome email to', user.email);
       await this.mailer.sendMail({
         to: user.email,
         subject: 'Welcome to Neuro-chord',
@@ -23,13 +22,12 @@ export class MailerCustomService {
           name: user.email.split('@')[0],
         },
       });
-      console.log('Welcome email sent to', user.email);
     } catch (error) {
       this.logger.error('Failed to send welcome email', error);
     }
   }
   async sendVerificationEmail(user: any, token: string) {
-    const verificationUrl = `${this.baseUrl}auth/verify-email?token=${token}`;
+    const verificationUrl = `${this.baseUrl}/verify-email?token=${token}`;
     try {
       await this.mailer.sendMail({
         to: user.email,

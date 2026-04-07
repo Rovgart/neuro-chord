@@ -1,25 +1,20 @@
 'use client';
+import { type LoginSchema, loginSchema } from '@/schemas/auth';
+import { useLoginMutation } from '@/services/api';
+import { selectCurrentUser, setCredentials } from '@/store/slices/authSlice';
 import { Button, FieldError, Form, Input, Label, TextField, toast } from '@heroui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { type LoginSchema, loginSchema } from '@/schemas/auth';
-import { useLoginMutation } from '@/services/api';
-import { selectCurrentUser, setCredentials } from '@/store/slices/authSlice';
 
 export default function LoginForm() {
   const [login, { isLoading }] = useLoginMutation();
   const router = useRouter();
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
-  useEffect(() => {
-    console.log(currentUser);
-    return () => {
-      console.log('CLEANING', currentUser);
-    };
-  }, [currentUser]);
+
   const {
     register,
     handleSubmit,
@@ -29,18 +24,15 @@ export default function LoginForm() {
   });
   useEffect(() => {});
   const onSubmit = async (data: LoginSchema) => {
-    try {
-      const payload = await login(data).unwrap();
-      dispatch(
-        setCredentials({
-          user: payload.user,
-          accessToken: payload.accessToken,
-        }),
-      );
+    const payload = await login(data).unwrap();
+    dispatch(
+      setCredentials({
+        user: payload.user,
+        accessToken: payload.accessToken,
+      }),
+    );
+    if (payload) {
       toast.success('Successfully registered');
-      //   router.push('/dashboard');
-    } catch (err: any) {
-      toast.danger(err.message);
     }
   };
 

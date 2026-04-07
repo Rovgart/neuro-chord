@@ -11,7 +11,6 @@ export class PinGuard implements CanActivate {
       throw new UnauthorizedException('Email and PIN are required');
     }
     const storedPin = await this.redis.getPasswordReset(`password-reset_pin:${email}`);
-    console.log(storedPin, pin);
     if (!storedPin || storedPin !== pin) {
       throw new UnauthorizedException("No password reset token provided or pin isn't the same as provided pin");
     }

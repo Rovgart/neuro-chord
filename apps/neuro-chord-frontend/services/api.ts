@@ -1,15 +1,24 @@
 import type { LoginSchema, RegisterSchema } from '@/schemas/auth';
-import { setCredentials } from '@/store/slices/authSlice';
+import { selectCurrentToken, setCredentials } from '@/store/slices/authSlice';
 import type { LoginResponseT, UserRegisterResponseT } from '@/types';
-import type { BaseQueryFn } from '@reduxjs/toolkit/query';
+import type { BaseQueryFn, RootState } from '@reduxjs/toolkit/query';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-const baseQuery = fetchBaseQuery({ baseUrl: 'http://localhost:3000' });
+const baseQuery = fetchBaseQuery({
+  baseUrl: 'http://localhost:3000',
+  prepareHeaders: (headers, { getState }) => {
+    const token = selectCurrentToken(getState() as RootState);
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+      console.log('Token injected into headers');
+    }
+    return headers;
+  },
+  credentials: 'include',
+});
 
 const baseQueryWithReauth: BaseQueryFn = async (args, api, options) => {
-  //  First call
   let result = await baseQuery(args, api, options);
-  // If error === 401
   if (result.error?.status === 401) {
     try {
       const refreshResult = await api.dispatch(neuroapi.endpoints.refreshToken.initiate({}));
@@ -49,9 +58,23 @@ export const neuroapi = createApi({
         method: 'POST',
       }),
     }),
-    forgotPassword: builder.mutation({
+    initRecoverAccount: builder.mutation({
       query: (data) => ({
-        url: 'forget-password',
+        url: 'auth/init-recover-account',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    verifyPin: builder.mutation({
+      query: (data) => ({
+        url: 'auth/verify-pin',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    resetPassword: builder.mutation({
+      query: (data) => ({
+        url: 'auth/reset-password',
         method: 'POST',
         body: data,
       }),
@@ -62,6 +85,14 @@ export const neuroapi = createApi({
         method: 'POST',
         body: dto,
       }),
+    }),
+    verifyEmail: builder.mutation({
+      query: (data) => {
+        return {
+          url: `auth/verify-email?token=${data}`,
+          method: 'POST',
+        };
+      },
     }),
     getProfile: builder.query({
       query: () => ({
@@ -85,10 +116,13 @@ export const neuroapi = createApi({
 });
 export const {
   useLoginMutation,
+  useVerifyEmailMutation,
+  useResetPasswordMutation,
   useLazyCheckEmailQuery,
   useLogoutMutation,
+  useInitRecoverAccountMutation,
   useRegisterMutation,
-  useForgotPasswordMutation,
+  useVerifyPinMutation,
   useCompleteProfileMutation,
   useGetProfileQuery,
 } = neuroapi;

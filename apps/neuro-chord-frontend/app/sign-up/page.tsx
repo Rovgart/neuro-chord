@@ -1,4 +1,4 @@
-import RegisterForm from '@/components/forms/RegisterForm';
+import RegisterForm from '@/components/forms/featurees/RegisterForm';
 
 type Props = {};
 
