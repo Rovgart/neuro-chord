@@ -13,7 +13,7 @@ import { Controller, useForm } from 'react-hook-form';
 export function VerifyPinForm() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
-  const [verifyPin, { isLoading, isError, isSuccess }] = useVerifyPinMutation();
+  const [verifyPin, { isLoading }] = useVerifyPinMutation();
   const {
     control,
     handleSubmit,
@@ -24,7 +24,6 @@ export function VerifyPinForm() {
   });
   const router = useRouter();
   const onVerify = async (data: VerifyPinSchema) => {
-    console.log('Submitting PIN:', data.pin);
     try {
       const verifiedPin = await verifyPin({ email, pin: data.pin });
       if (verifiedPin) {

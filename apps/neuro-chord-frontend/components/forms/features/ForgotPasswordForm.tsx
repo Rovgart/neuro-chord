@@ -1,14 +1,14 @@
 'use client';
 import { type ForgotPasswordSchema, forgotPasswordSchema } from '@/schemas/auth';
 import { useInitRecoverAccountMutation } from '@/services/api';
-import { Alert, Button, Form, Input, Spinner, TextField, toast } from '@heroui/react';
+import { Alert, Button, FieldError, Form, Input, Spinner, TextField } from '@heroui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
 function ForgotPasswordForm() {
-  const [initRecoverAccountMutate, { isLoading, isError, isSuccess, error }] = useInitRecoverAccountMutation();
+  const [initRecoverAccountMutate, { isLoading, isError, isSuccess }] = useInitRecoverAccountMutation();
   const router = useRouter();
   const {
     register,
@@ -19,21 +19,9 @@ function ForgotPasswordForm() {
   });
 
   const handleRecoverPass = async (data: ForgotPasswordSchema) => {
-    try {
-      const initRecovery = await initRecoverAccountMutate(data).unwrap();
-      if (initRecovery) {
-        router.push(`forgot-password/verify?email=${encodeURIComponent(data.email)}`);
-      }
-    } catch (err: unknown) {
-      const errorMessage = err?.data?.message;
-
-      if (Array.isArray(errorMessage)) {
-        toast.danger(errorMessage[0]);
-      } else if (typeof errorMessage === 'string') {
-        toast.danger(errorMessage);
-      } else {
-        toast.danger('Something went wrong. Please try again.');
-      }
+    const initRecovery = await initRecoverAccountMutate(data).unwrap();
+    if (initRecovery) {
+      router.push(`forgot-password/verify?email=${encodeURIComponent(data.email)}`);
     }
   };
   if (isSuccess) {
@@ -62,11 +50,11 @@ function ForgotPasswordForm() {
       </div>
 
       <Form onSubmit={handleSubmit(handleRecoverPass)} className="flex flex-col gap-4">
-        {/* Obsługa błędu globalnego (np. brak połączenia z serwerem) */}
         {isError && <Alert color="danger" title="Error" />}
 
-        <TextField isInvalid={!!errors.email} errorMessage={errors.email?.message} className="w-full">
-          <Input labelPlacement="outside" placeholder="Enter your e-mail" type="email" {...register('email')} />
+        <TextField isInvalid={!!errors.email} className="w-full">
+          <Input placeholder="Enter your e-mail" type="email" {...register('email')} />
+          <FieldError>{errors?.email?.message}</FieldError>
         </TextField>
 
         <Button
@@ -82,9 +70,11 @@ function ForgotPasswordForm() {
             </>
           )}
         </Button>
-        <Button as={Link} href="/login" variant="danger" className="w-full font-medium">
-          CANCEL AND GO BACK
-        </Button>
+        <Link href={'/sign-in'}>
+          <Button variant="danger" className="w-full font-medium">
+            CANCEL AND GO BACK
+          </Button>
+        </Link>
       </Form>
     </div>
   );

@@ -1,5 +1,5 @@
 'use client';
-import { ResetPasswordSchema, resetPasswordSchema } from '@/schemas/auth';
+import { type ResetPasswordSchema, resetPasswordSchema } from '@/schemas/auth';
 import { useResetPasswordMutation } from '@/services/api';
 import { Button, FieldError, Form, Input, Label, TextField, toast } from '@heroui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,18 +21,14 @@ function ResetPasswordForm() {
   });
 
   const handleReset = async (data: ResetPasswordSchema) => {
-    try {
-      await resetPassword({ pass: data.newPassword }).unwrap();
-      toast.success('Hasło zostało pomyślnie zmienione.');
-      router.push('/sign-in');
-    } catch (err: any) {
-      toast.danger(err?.data?.message || 'Nie udało się zresetować hasła.');
-    }
+    await resetPassword({ pass: data.newPassword }).unwrap();
+    toast.success('Hasło zostało pomyślnie zmienione.');
+    router.push('/sign-in');
   };
 
   if (isSuccess) {
     return (
-      <div className="flex flex-col w-full max-w-md gap-6 p-8 rounded-2xl border border-success/20 bg-success/5 shadow-2xl text-center">
+      <div className="flex flex-col w-full max-w-md gap-6 p-8 rounded-2xl border border-success-soft bg-success/5 shadow-2xl text-center">
         <CheckCircle2 className="mx-auto text-success" size={48} />
         <h2 className="text-2xl font-bold text-success">Hasło zmienione!</h2>
         <p className="text-sm text-foreground/60">Twoje nowe hasło zostało zapisane w systemie Neuro Chord.</p>

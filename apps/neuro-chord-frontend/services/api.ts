@@ -1,7 +1,8 @@
 import type { LoginSchema, RegisterSchema } from '@/schemas/auth';
+import type { RootState } from '@/store';
 import { selectCurrentToken, setCredentials } from '@/store/slices/authSlice';
 import type { LoginResponseT, UserRegisterResponseT } from '@/types';
-import type { BaseQueryFn, RootState } from '@reduxjs/toolkit/query';
+import type { BaseQueryFn } from '@reduxjs/toolkit/query';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 const baseQuery = fetchBaseQuery({
@@ -10,7 +11,6 @@ const baseQuery = fetchBaseQuery({
     const token = selectCurrentToken(getState() as RootState);
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
-      console.log('Token injected into headers');
     }
     return headers;
   },

@@ -1,19 +1,18 @@
 'use client';
 import { type LoginSchema, loginSchema } from '@/schemas/auth';
 import { useLoginMutation } from '@/services/api';
-import { selectCurrentUser, setCredentials } from '@/store/slices/authSlice';
+import { setCredentials } from '@/store/slices/authSlice';
 import { Button, FieldError, Form, Input, Label, TextField, toast } from '@heroui/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 
 export default function LoginForm() {
   const [login, { isLoading }] = useLoginMutation();
   const router = useRouter();
   const dispatch = useDispatch();
-  const currentUser = useSelector(selectCurrentUser);
 
   const {
     register,
@@ -54,7 +53,7 @@ export default function LoginForm() {
         <TextField isInvalid={!!errors.password} className="w-full " name="password" type="email">
           <Label>Password</Label>
           <Input placeholder="Password" type="password" {...register('password')} />
-          <FieldError>{errors.password && errors.password?.message}</FieldError>
+          <FieldError>{errors?.password?.message}</FieldError>
         </TextField>
 
         <div className="flex justify-end">
