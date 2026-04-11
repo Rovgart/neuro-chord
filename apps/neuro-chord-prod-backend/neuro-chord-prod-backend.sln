@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neuro-chord-prod-backend", "neuro-chord-prod-backend\neuro-chord-prod-backend.csproj", "{945B768A-ED6F-42BC-B690-2195BA1785AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuroChordDomain", "NeuroChordDomain\NeuroChordDomain.csproj", "{0C394D56-A2CA-4217-9EC0-9CB6ABEF0971}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuroChord.Application", "NeuroChord.Application\NeuroChord.Application.csproj", "{AA59DA25-8DCC-47DC-92F6-A1B4DCD4789B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuroChord.Infrastructure", "NeuroChord.Infrastructure\NeuroChord.Infrastructure.csproj", "{09ECD311-AE0A-4358-8336-74F0617298AE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{945B768A-ED6F-42BC-B690-2195BA1785AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{945B768A-ED6F-42BC-B690-2195BA1785AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{945B768A-ED6F-42BC-B690-2195BA1785AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{945B768A-ED6F-42BC-B690-2195BA1785AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C394D56-A2CA-4217-9EC0-9CB6ABEF0971}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C394D56-A2CA-4217-9EC0-9CB6ABEF0971}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C394D56-A2CA-4217-9EC0-9CB6ABEF0971}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C394D56-A2CA-4217-9EC0-9CB6ABEF0971}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA59DA25-8DCC-47DC-92F6-A1B4DCD4789B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA59DA25-8DCC-47DC-92F6-A1B4DCD4789B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA59DA25-8DCC-47DC-92F6-A1B4DCD4789B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA59DA25-8DCC-47DC-92F6-A1B4DCD4789B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09ECD311-AE0A-4358-8336-74F0617298AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09ECD311-AE0A-4358-8336-74F0617298AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09ECD311-AE0A-4358-8336-74F0617298AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09ECD311-AE0A-4358-8336-74F0617298AE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

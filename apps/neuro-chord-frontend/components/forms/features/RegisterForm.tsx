@@ -18,7 +18,7 @@ export default function RegisterForm() {
     handleSubmit,
     setError,
     clearErrors,
-    watch, // Do wyciągnięcia maila w widoku sukcesu
+    watch,
     formState: { errors },
   } = useForm<RegisterSchema>({
     resolver: zodResolver(registerSchema),
@@ -36,7 +36,7 @@ export default function RegisterForm() {
 
   if (isSuccess) {
     return (
-      <div className="flex flex-col w-full max-w-md gap-6 p-8 rounded-2xl border border-success/20 bg-content1 shadow-2xl animate-appearance-in">
+      <div className="flex flex-col w-full max-w-md gap-6 p-8 rounded-2xl border border-success-soft bg-content1 shadow-2xl animate-appearance-in">
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="p-4 rounded-full bg-success/10 text-success">
             <MailCheck size={48} />

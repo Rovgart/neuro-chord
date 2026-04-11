@@ -1,8 +1,6 @@
 import RegisterForm from '@/components/forms/features/RegisterForm';
 
-type Props = {};
-
-function Page({}: Props) {
+function Page() {
   return <RegisterForm />;
 }
 

@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="cuid.net" Version="7.0.0" />
+      <PackageReference Include="SecretsScanner.Gitleaks" Version="1.0.1" />
+      <PackageReference Include="SonarAnalyzer.CSharp" Version="10.23.0.137933">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="TngTech.ArchUnitNET" Version="0.13.3" />
+    </ItemGroup>
+
+</Project>

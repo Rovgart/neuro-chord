@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Sprawdza czy commit message pasuje do wzorca: type(scope): description
+npx --no -- commitlint --edit "$1"

@@ -1,13 +1,14 @@
-import { Module } from "@nestjs/common";
-import { JwtModule } from "@nestjs/jwt";
-import { PassportModule } from "@nestjs/passport";
-import { SecurityModule } from "@security/security.module";
-import { SessionModule } from "@session/session.module";
-import { UsersModule } from "@users/users.module";
-import { RedisModule } from "src/common/infrastructure/redis/redis.module";
-import { VerificationsModule } from "src/common/infrastructure/verifications/verifications.module";
-import { AuthController } from "./auth.controller";
-import { AuthService } from "./auth.service";
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { SecurityModule } from '@security/security.module';
+import { SessionModule } from '@session/session.module';
+import { UsersModule } from '@users/users.module';
+import { RedisModule } from 'src/common/infrastructure/redis/redis.module';
+import { VerificationsModule } from 'src/common/infrastructure/verifications/verifications.module';
+import { ProfileModule } from 'src/profile/profile/profile.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
 
 @Module({
   imports: [
@@ -16,9 +17,10 @@ import { AuthService } from "./auth.service";
     SecurityModule,
     SessionModule,
     VerificationsModule,
+    ProfileModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: "7d" },
+      signOptions: { expiresIn: '7d' },
     }),
     RedisModule,
   ],

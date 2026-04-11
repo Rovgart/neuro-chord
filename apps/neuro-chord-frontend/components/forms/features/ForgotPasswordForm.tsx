@@ -46,7 +46,7 @@ function ForgotPasswordForm() {
         <h2 className="text-3xl font-bold text-foreground tracking-tight">
           <p className="text-primary">Recover password</p>
         </h2>
-        <p className="text-sm text-foreground/60">We'll send you a link on your e-mail</p>
+        <p className="text-sm text-foreground/60">We will send you a link on your e-mail</p>
       </div>
 
       <Form onSubmit={handleSubmit(handleRecoverPass)} className="flex flex-col gap-4">

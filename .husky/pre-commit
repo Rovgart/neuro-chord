@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Checking code quality before commit"
+
+# Frontend (Bun)
+cd apps/neuro-chord-frontend && bun lint && cd ../..
+
+# Backend (.NET) - formatowanie i sprawdzenie błędów (bez pełnego buildu)
+dotnet format ./apps/neuro-chord-prod-backend/neuro-chord-prod-backend.sln --verify-no-changes

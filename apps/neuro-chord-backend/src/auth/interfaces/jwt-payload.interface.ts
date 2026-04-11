@@ -3,6 +3,7 @@ export interface JwtPayload {
   email: string;
   role: string;
   isVerified: boolean;
+  onboardingComplete: boolean;
   sid: string;
   iat?: number;
   exp?: number;

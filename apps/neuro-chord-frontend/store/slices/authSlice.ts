@@ -6,6 +6,7 @@ export type AuthState = {
   token: string | null;
   isAuthenticated: boolean;
 };
+
 const initState: AuthState = {
   user: null,
   token: null,
@@ -15,13 +16,14 @@ const authSlice = createSlice({
   name: 'auth-slice',
   initialState: initState,
   reducers: {
-    setCredentials: (state, action: PayloadAction<{ user: any | null; accessToken: string | null }>) => {
+    setCredentials: (state, action: PayloadAction<{ user: User | null; accessToken: string | null }>) => {
       const { user, accessToken } = action.payload;
       state.user = user;
       state.token = accessToken;
       state.isAuthenticated = true;
     },
     removeCredentials: (state) => {
+      // biome-ignore lint/complexity/noCommaOperator: <Implementing recommended pattern for Next.js >
       (state.isAuthenticated = false), (state.token = null), (state.user = null);
     },
   },

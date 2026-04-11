@@ -4,15 +4,29 @@
   "scripts": {
     "dev": "bun --filter '*' dev",
     "build": "bun --filter '*' build",
-    "start:dev": "nest start --watch "
+    "start:dev": "nest start --watch ",
+    "prepare": "husky"
   },
   "workspaces": [
     "apps/*"
   ],
+  "lint-staged": {
+    "apps/neuro-chord-frontend/**/*.{ts,tsx,js}": [
+      "cd apps/neuro-chord-frontend && bun lint",
+      "cd apps/neuro-chord-frontend && bun format"
+    ],
+    "apps/neuro-chord-backend/**/*.cs": [
+      "dotnet format apps/neuro-chord-backend/neuro-chord-backend.sln --include"
+    ]
+  },
   "overrides": {
     "@types/pg": "8.11.11"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.8"
+    "@biomejs/biome": "2.4.8",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
   }
 }

@@ -1,9 +1,10 @@
+import { CompleteOnboardingDto, UserRole } from '@DTOs/complete-onboarding.dto';
 import { LoginUserDto } from '@DTOs/login-user-dto';
 import { RegisterUserDto } from '@DTOs/register-user.dto';
 import { MailerCustomService } from '@mailer/mailer.service';
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Role } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { RedisService } from '@redis/redis.service';
 import { SecurityService } from '@security/security.service';
@@ -11,6 +12,7 @@ import { SessionService } from '@session/session.service';
 import { UsersService } from '@users/users.service';
 import { PinoLogger } from 'nestjs-pino';
 import { VerificationService } from 'src/common/infrastructure/verifications/verifications.service';
+import { ProfileService } from 'src/profile/profile/profile.service';
 import { generateResetPin, getNow } from 'src/utils';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
@@ -25,11 +27,9 @@ export class AuthService {
     private redisService: RedisService,
     private readonly userService: UsersService,
     private readonly verificationService: VerificationService,
+    private readonly profileService: ProfileService,
     private logger: PinoLogger,
-  ) {
-    const check = this.configService.get('SALT_ROUNDS');
-    const front_url = this.configService.get('FRONTEND_URL');
-  }
+  ) {}
 
   public async registerUser(userData: RegisterUserDto) {
     await this.userService.verifyUser(userData.email);
@@ -56,6 +56,7 @@ export class AuthService {
           role: Role.STUDENT,
           isVerified: false,
           sid: session.id,
+          onboardingComplete: updatedUser.onboardingComplete,
         });
         await this.verificationService.deleteVerifiedUser(verifiedUser.id, tx);
         return tokens;
@@ -82,6 +83,7 @@ export class AuthService {
       sid: session.id,
       role: user.role,
       isVerified: user.isVerified,
+      onboardingComplete: user.onboardingComplete,
     };
 
     // Create new pair of accessToken and refreshToken
@@ -94,6 +96,36 @@ export class AuthService {
       await this.redisService.setWithExpiry(`bl_ref:${refreshToken.sid}`, 'true', remainingTime);
     }
     return newTokens;
+  }
+  async completeOnboarding(userRole: Role, userId: string, sid: string, data: CompleteOnboardingDto) {
+    let updatedUser: User;
+    if (data.role === UserRole.STUDENT) {
+      const studentData = {
+        displayName: data.displayName,
+        description: data.description,
+        imgUrl: data.imgUrl,
+        username: data.username!, // ! bo przy roli STUDENT to pole na pewno jest (dzięki class-validator)
+      };
+      updatedUser = await this.profileService.createStudentsProfile(userId, studentData);
+    } else {
+      const teacherData = {
+        displayName: data.displayName,
+        description: data.description,
+        specialization: data.specialization!, // ! analogicznie jak wyżej
+        favMusicGenre: data.favMusicGenre,
+      };
+      updatedUser = await this.profileService.createTeachersProfile(userId, teacherData);
+    }
+    const newPayload: JwtPayload = {
+      sub: updatedUser?.id,
+      email: updatedUser?.email,
+      role: updatedUser.role,
+      isVerified: false,
+      onboardingComplete: true,
+      sid,
+    };
+    const { accessToken, refreshToken } = await this.securityService.generateTokens(newPayload);
+    return { accessToken, refreshToken };
   }
   async loginUser(userData: LoginUserDto, devInfo: { ip: string; ua: string }) {
     if (!userData.email || !userData.password) {
@@ -118,6 +150,7 @@ export class AuthService {
         isVerified: user.isVerified,
         role: user.role,
         sid: session.id,
+        onboardingComplete: user.onboardingComplete,
       };
       const { refreshToken, accessToken } = await this.securityService.generateTokens(payload);
       return {
@@ -195,6 +228,7 @@ export class AuthService {
         isVerified: newUser.isVerified,
         role: newUser.role,
         sid: session.id,
+        onboardingComplete: newUser.onboardingComplete,
       };
       await this.sessionService.createSession(newUser.id, devInfo);
       const tokens = await this.securityService.generateTokens(payload);

@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/style/useImportType: <explanation> */
 
 import { CheckEmailDTO } from '@DTOs/check-email.dto';
+import { CompleteOnboardingDto } from '@DTOs/complete-onboarding.dto';
 import { LoginUserDto } from '@DTOs/login-user-dto';
 import { RegisterUserDto } from '@DTOs/register-user.dto';
 import { VerifyPinDTO } from '@DTOs/verify-pin.dto';
@@ -120,6 +121,11 @@ export class AuthController {
   async checkEmail(@Query() query: CheckEmailDTO) {
     return this.authService.checkEmailAvailability(query.email);
   }
+  @Post('complete-onboarding')
+  async completeOnboarding(data: CompleteOnboardingDto, @Res() res: any) {
+    return { message: 'Works' };
+  }
+
   @Post('verify-email')
   @Public()
   @RequireEmailToken()

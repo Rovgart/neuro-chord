@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+echo "🚀 Running pre-push tests..."
+
+# Backend Tests (.NET)
+echo "🧪 Testing Backend..."
+cd apps/neuro-chord-backend && dotnet test && cd ../..
+
+# Frontend Tests (Bun)
+echo "🧪 Testing Frontend..."
+cd apps/neuro-chord-frontend && bun test && cd ../..
+
+echo "✅ All tests passed successfully!"
