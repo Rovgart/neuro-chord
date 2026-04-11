@@ -12,4 +12,6 @@ public interface IUserRepository
     Task UpdateVerificationStatusAsync(string id, bool isVerified);
     Task UpdateRoleAsync(string id, Role role);
     Task<bool> SaveChangesAsync();
+
+    Task DeleteUserAsync(string id);
 }

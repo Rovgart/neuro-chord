@@ -45,4 +45,9 @@ public class UserRepository : IUserRepository
         await _context.Users.Where(u => u.Id == id)
             .ExecuteUpdateAsync(setters => setters.SetProperty(u => u.IsVerified, isVerified));
     }
+
+    public async Task DeleteUserAsync(string id)
+    {
+        await _context.Users.Where(u => u.Id == id).ExecuteDeleteAsync();
+    }
 }

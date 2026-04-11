@@ -16,21 +16,12 @@ public class UserService : IUserService
         _securityService = securityService;
     }
 
-    public Task<bool> DeleteUser(string id)
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task<UserDto> GetUserById(string id)
     {
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null) throw new KeyNotFoundException($"User with id {id} not found");
 
-        return new UserDto
-        {
-            Id = user.Id,
-            Email = user.Email
-        };
+        return MapToDto(user);
     }
 
     public async Task<UserDto> GetUserByEmail(string email)
@@ -38,11 +29,7 @@ public class UserService : IUserService
         var existingUser = await _userRepository.GetByEmailAsync(email);
         if (existingUser == null) throw new KeyNotFoundException($"User with email {email} not found");
 
-        return new UserDto
-        {
-            Id = existingUser.Id,
-            Email = existingUser.Email
-        };
+        return MapToDto(existingUser);
     }
 
     public async Task<UserDto> CreateUser(CreateUserRequest request)
@@ -63,15 +50,38 @@ public class UserService : IUserService
         var success = await _userRepository.SaveChangesAsync();
         if (!success) throw new KeyNotFoundException("User creation failed");
 
-        return new UserDto
-        {
-            Id = newUser.Id,
-            Email = newUser.Email
-        };
+        return MapToDto(newUser);
     }
 
-    public Task<UserDto> UpdateUser(string id)
+    public async Task<UserDto> UpdateUserRoleAsync(string id, Role role)
     {
-        throw new NotImplementedException();
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null) throw new KeyNotFoundException($"User with id {id} not found");
+
+        await _userRepository.UpdateRoleAsync(id, role);
+
+        return MapToDto(user);
+    }
+
+    public async Task<UserDto> UpdateUserStatusAsync(string id, bool isVerified)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null) throw new KeyNotFoundException($"User with id {id} not found");
+        await _userRepository.UpdateVerificationStatusAsync(user.Id, isVerified);
+        return MapToDto(user);
+    }
+
+    public async Task DeleteUserAsync(string id)
+    {
+        await _userRepository.DeleteUserAsync(id);
+    }
+
+    private static UserDto MapToDto(User user)
+    {
+        return new UserDto
+        {
+            Id = user.Id,
+            Email = user.Email
+        };
     }
 }

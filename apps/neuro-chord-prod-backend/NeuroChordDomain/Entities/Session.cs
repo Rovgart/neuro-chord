@@ -4,7 +4,7 @@ namespace NeuroChordDomain.Entities;
 
 public class Session
 {
-    public string Id { get; set; } = new Cuid2(maxLength: 24).ToString();
+    public required string Id { get; set; } = new Cuid2(24).ToString();
     public string UserAgent { get; set; } = string.Empty;
     public string IpAddress { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;
@@ -12,6 +12,6 @@ public class Session
     public bool IsRevoked { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public string UserId { get; set; }
-    public virtual User User { get; set; }
+    public string? UserId { get; set; }
+    public virtual required User User { get; set; }
 }
