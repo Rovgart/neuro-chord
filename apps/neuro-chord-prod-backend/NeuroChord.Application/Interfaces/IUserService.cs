@@ -5,7 +5,7 @@ namespace NeuroChord.Application.Interfaces;
 
 public interface IUserService
 {
-    Task<UserDto> GetUserByEmail(string email);
+    Task<UserInternalAuthDto> GetUserForAuthByEmail(string email);
     Task<UserDto> GetUserById(string id);
     Task<UserDto> UpdateUserStatusAsync(string id, bool isVerified);
     Task<UserDto> UpdateUserRoleAsync(string id, Role role);

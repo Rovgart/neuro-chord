@@ -4,7 +4,7 @@ namespace NeuroChordDomain.Entities;
 
 public class Profile
 {
-    public string Id { get; set; } = new Cuid2(maxLength: 24).ToString();
+    public string Id { get; set; } = new Cuid2(24).ToString();
     public string UserId { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -14,5 +14,4 @@ public class Profile
     public virtual TeacherProfile? TeacherProfile { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
 }

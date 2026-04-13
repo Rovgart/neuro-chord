@@ -1,6 +1,5 @@
 using NeuroChord.Application.Interfaces;
 using NeuroChordDomain.Entities;
-using Visus.Cuid;
 
 namespace NeuroChord.Application.Services;
 
@@ -17,13 +16,11 @@ public class SessionService : ISessionService
     {
         var session = new Session
         {
-            Id = new Cuid2().ToString(),
             UserId = userId,
             IpAddress = ipAddress,
             UserAgent = userAgent,
             RefreshToken = Guid.NewGuid().ToString(),
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
-            User = null!
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
         };
 
         await _sessionRepository.AddAsync(session);
@@ -31,15 +28,34 @@ public class SessionService : ISessionService
         return session;
     }
 
-    public async Task InvalidateSessionAsync(string sessionId)
+    public async Task<bool> IsSessionValidAsync(string refreshToken)
     {
-        await _sessionRepository.DeleteAsync(sessionId);
-        await _sessionRepository.SaveChangesAsync();
+        var session = await _sessionRepository.GetByRefreshTokenAsync(refreshToken);
+
+        return session != null &&
+               !session.IsRevoked &&
+               session.ExpiresAt > DateTime.UtcNow;
     }
 
-    public async Task<bool> IsSessionValidAsync(string sessionId)
+    public async Task RevokeSessionAsync(string refreshToken)
     {
-        var session = await _sessionRepository.GetByIdAsync(sessionId);
-        return session != null && !session.IsRevoked && session.ExpiresAt > DateTime.UtcNow;
+        var session = await _sessionRepository.GetByRefreshTokenAsync(refreshToken);
+
+        if (session != null)
+        {
+            session.IsRevoked = true;
+            session.RevokedAt = DateTime.UtcNow;
+            session.UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
+    public async Task RevokeAllUserSessionsAsync(string userId)
+    {
+        await _sessionRepository.RevokeAllUserSessionsAsync(userId);
+    }
+
+    public async Task<Session?> GetSessionByTokenAsync(string refreshToken)
+    {
+        return await _sessionRepository.GetByRefreshTokenAsync(refreshToken);
     }
 }

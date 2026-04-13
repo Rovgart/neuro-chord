@@ -2,9 +2,10 @@ using NeuroChordDomain.Enums;
 using Visus.Cuid;
 
 namespace NeuroChordDomain.Entities;
+
 public class User
 {
-    public string Id { get; set; } = new Cuid2(maxLength: 24).ToString();
+    public string Id { get; set; } = new Cuid2(24).ToString();
     public string? CampaignId { get; set; } = null;
 
     public virtual Campaign? Campaign { get; set; }

@@ -13,7 +13,6 @@ public interface IAuthService
     Task<AuthResponseDto> VerifyEmailAsync(string token, string ipAddress, string userAgent);
 
     Task LogoutAsync(string accessToken, string refreshToken);
-
     Task ForgotPasswordAsync(string email);
     Task ResetPasswordAsync(ResetPasswordRequestDto request);
 }
