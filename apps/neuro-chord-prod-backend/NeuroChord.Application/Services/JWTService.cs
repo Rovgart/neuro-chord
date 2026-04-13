@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NeuroChord.Application.Common.Security;
+using NeuroChord.Application.DTOs;
 using NeuroChord.Application.Interfaces;
 using NeuroChordDomain.Entities;
 
@@ -17,6 +18,9 @@ public class JwtService : IJwtService
     public JwtService(IOptions<JwtOptions> options)
     {
         _options = options.Value;
+
+        if (string.IsNullOrEmpty(_options.SecretKey) || _options.SecretKey.Length < 32)
+            throw new InvalidOperationException("SecretKey must be at least 32 characters long.");
     }
 
     public string GenerateRefreshToken()
@@ -27,13 +31,13 @@ public class JwtService : IJwtService
         return Convert.ToBase64String(randomNumber);
     }
 
-    public string GenerateAccessToken(User user, Session session)
+    public string GenerateAccessToken(UserInternalAuthDto user, Session session)
     {
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
             new(JwtRegisteredClaimNames.Email, user.Email),
-            new(ClaimTypes.Role, user.Role.ToString()),
+            new(ClaimTypes.Role, user.Role),
             new(ClaimTypes.Sid, session.Id),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
@@ -45,8 +49,9 @@ public class JwtService : IJwtService
             _options.Issuer,
             _options.Audience,
             claims,
-            expires: DateTime.UtcNow.AddMinutes(_options.ExpiryMinutes),
-            signingCredentials: creds
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddMinutes(_options.ExpiryMinutes),
+            creds
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);

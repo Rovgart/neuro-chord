@@ -8,12 +8,14 @@ namespace NeuroChord.Application.Services;
 public class UserService : IUserService
 {
     private readonly ISecurityService _securityService;
+    private readonly IUnitOfWork _unitOfWork; // Dodajemy UoW
     private readonly IUserRepository _userRepository;
 
-    public UserService(IUserRepository userRepository, ISecurityService securityService)
+    public UserService(IUserRepository userRepository, ISecurityService securityService, IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
         _securityService = securityService;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<UserDto> GetUserById(string id)
@@ -24,31 +26,39 @@ public class UserService : IUserService
         return MapToDto(user);
     }
 
-    public async Task<UserDto> GetUserByEmail(string email)
+    public async Task<UserInternalAuthDto> GetUserForAuthByEmail(string email)
     {
-        var existingUser = await _userRepository.GetByEmailAsync(email);
-        if (existingUser == null) throw new KeyNotFoundException($"User with email {email} not found");
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null) return null;
 
-        return MapToDto(existingUser);
+        return new UserInternalAuthDto
+        {
+            Id = user.Id,
+            Email = user.Email,
+            PasswordHash = user.PasswordHash,
+            Role = user.Role.ToString()
+        };
     }
 
     public async Task<UserDto> CreateUser(CreateUserRequest request)
     {
         var existingUser = await _userRepository.GetByEmailAsync(request.Email);
-        if (existingUser != null) throw new KeyNotFoundException("User with this email already exists");
-        var hashedPassword = _securityService.HashPassword(request.Password);
+        if (existingUser != null) throw new InvalidOperationException("User with this email already exists");
+
         var newUser = new User
         {
             Email = request.Email,
-            PasswordHash = hashedPassword,
+            PasswordHash = _securityService.HashPassword(request.Password),
             RegistrationStep = RegistrationStep.AccountCreated,
             IsVerified = false,
+            Role = Role.Student,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
+
         await _userRepository.AddUserAsync(newUser);
-        var success = await _userRepository.SaveChangesAsync();
-        if (!success) throw new KeyNotFoundException("User creation failed");
+
+        await _unitOfWork.SaveChangesAsync();
 
         return MapToDto(newUser);
     }
@@ -81,7 +91,10 @@ public class UserService : IUserService
         return new UserDto
         {
             Id = user.Id,
-            Email = user.Email
+            Email = user.Email,
+            Role = user.Role.ToString(),
+            IsVerified = user.IsVerified,
+            RegistrationStep = user.RegistrationStep
         };
     }
 }
