@@ -6,6 +6,7 @@ namespace NeuroChord.Application.Services;
 
 public class AuthService : IAuthService
 {
+    private readonly IBackgroundJobService _backgroundJobService;
     private readonly IDistributedCache _cache;
     private readonly IJwtService _jwtService;
     private readonly INeuroChordEmailService _neuroChordEmailService;
@@ -21,6 +22,7 @@ public class AuthService : IAuthService
         IUnitOfWork unitOfWork,
         IDistributedCache cache,
         INeuroChordEmailService neuroChordEmailService,
+        IBackgroundJobService backgroundJobService,
         ISecurityService securityService)
     {
         _sessionService = sessionService;
@@ -29,6 +31,7 @@ public class AuthService : IAuthService
         _unitOfWork = unitOfWork;
         _securityService = securityService;
         _neuroChordEmailService = neuroChordEmailService;
+        _backgroundJobService = backgroundJobService;
         _cache = cache;
     }
 
@@ -148,17 +151,14 @@ public class AuthService : IAuthService
     {
         var token = Guid.NewGuid().ToString();
 
-        // Konfiguracja czasu wygasania (np. 15 minut)
         var cacheOptions = new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
         };
 
-        // Zapis do Redisa (Klucz to token, wartość to email)
         await _cache.SetStringAsync(token, email, cacheOptions);
 
-        // Teraz wyślij ten token w mailu przez Twój EmailService
         var activationLink = $"https://neurochord.com/verify?token={token}";
-        await _neuroChordEmailService.SendWelcomeEmailAsync(email, activationLink);
+        _backgroundJobService.Enqueue(() => _neuroChordEmailService.SendWelcomeEmailAsync(email, activationLink));
     }
 }

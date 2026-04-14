@@ -1,5 +1,7 @@
 using System.Net.Mail;
 using FluentValidation;
+using Hangfire;
+using Hangfire.Redis.StackExchange;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using neuro_chord_prod_backend.Middleware;
@@ -16,6 +18,7 @@ var sender = new SmtpClient("127.0.0.1")
     Port = 1025
 };
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
 builder.Services.AddFluentEmail("noreply@neurochord.com", "Neuro Chord System")
     .AddRazorRenderer(typeof(EmailService))
     .AddSmtpSender(sender);
@@ -29,6 +32,15 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = "NeuroChord_";
 });
 builder.Services.AddEndpointsApiExplorer();
+var redisPassword = builder.Configuration["REDIS_PASSWORD"] ?? builder.Configuration["Redis:Password"];
+var redisConnection = $"127.0.0.1:6379,password={redisPassword}";
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseRedisStorage(redisConnection)
+);
+builder.Services.AddHangfireServer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "NeuroChord API", Version = "v1" });
@@ -81,6 +93,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseHangfireDashboard();
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
