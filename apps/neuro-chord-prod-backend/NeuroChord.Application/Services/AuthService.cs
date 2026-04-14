@@ -84,16 +84,13 @@ public class AuthService : IAuthService
         await _unitOfWork.BeginTransactionAsync();
         try
         {
-            // 1. Sprawdzamy czy token jest ważny
             var session = await _sessionService.GetSessionByTokenAsync(refreshToken);
             if (session == null || !await _sessionService.IsSessionValidAsync(refreshToken))
                 throw new UnauthorizedAccessException("Session expired or invalid");
 
-            // 2. Pobieramy dane usera do nowych tokenów
             var user = await _userService.GetUserForAuthByEmail(session.UserId);
             if (user == null) throw new UnauthorizedAccessException();
 
-            // 3. Rotacja tokenów (Opcjonalnie: unieważniamy stary, tworzymy nowy w ramach tej samej sesji)
             var newRefreshToken = _jwtService.GenerateRefreshToken();
             session.RefreshToken = newRefreshToken;
             session.UpdatedAt = DateTime.UtcNow;
