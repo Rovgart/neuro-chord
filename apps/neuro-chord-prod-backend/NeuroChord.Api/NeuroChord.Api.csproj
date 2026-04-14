@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <RootNamespace>neuro_chord_prod_backend</RootNamespace>
+        <RootNamespace>NeuroChord.Api</RootNamespace>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <AssemblyName>NeuroChord.Api</AssemblyName>
+        <TargetFramework>net9.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1"/>
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.25"/>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.25">

@@ -1,8 +1,11 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using neuro_chord_prod_backend.Middleware;
 using NeuroChord.Application.Common.Security;
 using NeuroChord.Application.Interfaces;
 using NeuroChord.Application.Services;
+using NeuroChord.Application.Validators;
 using NeuroChord.Infrastructure.Persistence;
 using NeuroChord.Infrastructure.Persistence.Repositories;
 using NeuroChord.Infrastructure.Services;
@@ -43,7 +46,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
-
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
@@ -55,6 +58,7 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 var app = builder.Build();
 
 // Pipeline HTTP
+app.UseMiddleware<ExceptionMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

@@ -1,7 +1,9 @@
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
-using NeuroChord.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-namespace neuro_chord_prod_backend.Controllers;
+using NeuroChord.Infrastructure.Persistence;
+
+namespace NeuroChord.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -21,14 +23,18 @@ public class Test : ControllerBase
         {
             var isAlive = await _context.Database.CanConnectAsync();
 
-            return isAlive
-                ? Ok(new { Status = "Sukces", Message = "Postgres żyje i pije wodę!", DbName = _context.Database.GetDbConnection().Database })
-                : BadRequest("Baza nie odpowiada. Sprawdź czy Postgres działa.");
+            if (!isAlive) return BadRequest("DB is not responding.");
+
+            return Ok(new
+            {
+                Status = (int)HttpStatusCode.Accepted,
+                Message = "Is alive",
+                DbName = _context.Database.GetDbConnection().Database
+            });
         }
         catch (Exception ex)
         {
-
-            return StatusCode(500, new { Status = "Katastrofa", Error = ex.Message });
+            return StatusCode(500, new { Status = "Crashed", Error = ex.Message });
         }
     }
 }

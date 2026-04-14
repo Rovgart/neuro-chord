@@ -1,4 +1,5 @@
 using NeuroChord.Application.DTOs;
+using NeuroChord.Application.Exceptions;
 using NeuroChord.Application.Interfaces;
 using NeuroChordDomain.Entities;
 using NeuroChordDomain.Enums;
@@ -8,7 +9,7 @@ namespace NeuroChord.Application.Services;
 public class UserService : IUserService
 {
     private readonly ISecurityService _securityService;
-    private readonly IUnitOfWork _unitOfWork; // Dodajemy UoW
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IUserRepository _userRepository;
 
     public UserService(IUserRepository userRepository, ISecurityService securityService, IUnitOfWork unitOfWork)
@@ -21,7 +22,7 @@ public class UserService : IUserService
     public async Task<UserDto> GetUserById(string id)
     {
         var user = await _userRepository.GetByIdAsync(id);
-        if (user == null) throw new KeyNotFoundException($"User with id {id} not found");
+        if (user == null) throw new NotFoundException($"User with id {id} not found");
 
         return MapToDto(user);
     }
@@ -29,7 +30,7 @@ public class UserService : IUserService
     public async Task<UserInternalAuthDto> GetUserForAuthByEmail(string email)
     {
         var user = await _userRepository.GetByEmailAsync(email);
-        if (user == null) return null;
+        if (user == null) throw new NotFoundException("User with this email not found");
 
         return new UserInternalAuthDto
         {
@@ -43,7 +44,7 @@ public class UserService : IUserService
     public async Task<UserDto> CreateUser(CreateUserRequest request)
     {
         var existingUser = await _userRepository.GetByEmailAsync(request.Email);
-        if (existingUser != null) throw new InvalidOperationException("User with this email already exists");
+        if (existingUser != null) throw new ConflictException("User with this email already exists");
 
         var newUser = new User
         {
@@ -66,7 +67,7 @@ public class UserService : IUserService
     public async Task<UserDto> UpdateUserRoleAsync(string id, Role role)
     {
         var user = await _userRepository.GetByIdAsync(id);
-        if (user == null) throw new KeyNotFoundException($"User with id {id} not found");
+        if (user == null) throw new NotFoundException($"User with id {id} not found");
 
         await _userRepository.UpdateRoleAsync(id, role);
 
@@ -76,7 +77,7 @@ public class UserService : IUserService
     public async Task<UserDto> UpdateUserStatusAsync(string id, bool isVerified)
     {
         var user = await _userRepository.GetByIdAsync(id);
-        if (user == null) throw new KeyNotFoundException($"User with id {id} not found");
+        if (user == null) throw new NotFoundException($"User with id {id} not found");
         await _userRepository.UpdateVerificationStatusAsync(user.Id, isVerified);
         return MapToDto(user);
     }
