@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Distributed;
 using NeuroChord.Application.DTOs;
 using NeuroChord.Application.Interfaces;
 
@@ -5,6 +6,7 @@ namespace NeuroChord.Application.Services;
 
 public class AuthService : IAuthService
 {
+    private readonly IDistributedCache _cache;
     private readonly IJwtService _jwtService;
     private readonly INeuroChordEmailService _neuroChordEmailService;
     private readonly ISecurityService _securityService;
@@ -17,6 +19,7 @@ public class AuthService : IAuthService
         IUserService userService,
         IJwtService jwtService,
         IUnitOfWork unitOfWork,
+        IDistributedCache cache,
         INeuroChordEmailService neuroChordEmailService,
         ISecurityService securityService)
     {
@@ -26,6 +29,7 @@ public class AuthService : IAuthService
         _unitOfWork = unitOfWork;
         _securityService = securityService;
         _neuroChordEmailService = neuroChordEmailService;
+        _cache = cache;
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, string ipAddress, string userAgent)
@@ -70,7 +74,7 @@ public class AuthService : IAuthService
             Email = request.Email,
             Password = request.Password
         });
-        await _neuroChordEmailService.SendWelcomeEmailAsync(user.Email);
+        await GenerateVerificationTokenAsync(user.Email);
         return user != null;
     }
 
@@ -138,5 +142,23 @@ public class AuthService : IAuthService
     public async Task ResetPasswordAsync(ResetPasswordRequestDto request)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task GenerateVerificationTokenAsync(string email)
+    {
+        var token = Guid.NewGuid().ToString();
+
+        // Konfiguracja czasu wygasania (np. 15 minut)
+        var cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
+        };
+
+        // Zapis do Redisa (Klucz to token, wartość to email)
+        await _cache.SetStringAsync(token, email, cacheOptions);
+
+        // Teraz wyślij ten token w mailu przez Twój EmailService
+        var activationLink = $"https://neurochord.com/verify?token={token}";
+        await _neuroChordEmailService.SendWelcomeEmailAsync(email, activationLink);
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
         <Nullable>enable</Nullable>
@@ -9,25 +9,26 @@
         <TargetFramework>net9.0</TargetFramework>
         <PreserveCompilationContext>true</PreserveCompilationContext>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    </PropertyGroup>
+      <UserSecretsId>cfe7eae4-c880-49f5-a7ec-6f2f8f4f7094</UserSecretsId>
+  </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1"/>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.25"/>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6"/>
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.25" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.25">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.5"/>
-        <PackageReference Include="SecretsScanner.Gitleaks" Version="1.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.5" />
+        <PackageReference Include="SecretsScanner.Gitleaks" Version="1.0.1" />
         <PackageReference Include="SonarAnalyzer.CSharp" Version="10.23.0.137933">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4"/>
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.17.0"/>
-        <PackageReference Include="TngTech.ArchUnitNET" Version="0.13.3"/>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.17.0" />
+        <PackageReference Include="TngTech.ArchUnitNET" Version="0.13.3" />
     </ItemGroup>
 
     <ItemGroup>
@@ -37,7 +38,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NeuroChord.Infrastructure\NeuroChord.Infrastructure.csproj"/>
+        <ProjectReference Include="..\NeuroChord.Infrastructure\NeuroChord.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>

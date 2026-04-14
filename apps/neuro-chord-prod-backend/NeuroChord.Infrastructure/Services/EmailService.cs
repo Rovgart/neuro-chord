@@ -23,10 +23,10 @@ public class EmailService : INeuroChordEmailService
         throw new NotImplementedException();
     }
 
-    public async Task SendWelcomeEmailAsync(string email)
+    public async Task SendWelcomeEmailAsync(string email, string activationLink)
     {
         var cleanEmail = email?.Trim();
-        var model = new { Email = cleanEmail, ActivationLink = "https://kamixu.com" };
+        var model = new { Email = cleanEmail, ActivationLink = activationLink };
 
         var assembly = GetType().Assembly;
         var names = assembly.GetManifestResourceNames();

@@ -20,6 +20,14 @@ builder.Services.AddFluentEmail("noreply@neurochord.com", "Neuro Chord System")
     .AddRazorRenderer(typeof(EmailService))
     .AddSmtpSender(sender);
 builder.Services.AddControllers();
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    var redisPassword = builder.Configuration["REDIS_PASSWORD"]
+                        ?? builder.Configuration["Redis:Password"];
+
+    options.Configuration = $"127.0.0.1:6379,password={redisPassword},abortConnect=false";
+    options.InstanceName = "NeuroChord_";
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

@@ -59,6 +59,7 @@ prometheus/data
 *.suo
 *.userosscache
 *.sln.docuser
+secrets.json
 
 # Rider & Visual Studio
 .vs/
@@ -67,6 +68,7 @@ prometheus/data
 *.lut
 *.axml
 .vs-code/
+
 
 # NuGet Packages
 *.nupkg
