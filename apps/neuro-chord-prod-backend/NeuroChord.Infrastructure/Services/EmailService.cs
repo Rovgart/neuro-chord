@@ -1,0 +1,44 @@
+using FluentEmail.Core;
+using NeuroChord.Application.Interfaces;
+
+namespace NeuroChord.Infrastructure.Services;
+
+public class EmailService : INeuroChordEmailService
+{
+    private readonly IFluentEmail _fluentEmail;
+
+    public EmailService(IFluentEmail fluentEmail)
+    {
+        _fluentEmail = fluentEmail;
+    }
+
+
+    public Task SendPasswordRecoveryPinAsync(string email, string pin)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SendVerificationLinkAsync(string email, string userName, string link)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task SendWelcomeEmailAsync(string email)
+    {
+        var cleanEmail = email?.Trim();
+        var model = new { Email = cleanEmail, ActivationLink = "https://kamixu.com" };
+
+        var assembly = GetType().Assembly;
+        var names = assembly.GetManifestResourceNames();
+
+
+        var welcomeTemplateName = names.FirstOrDefault(n => n.EndsWith("Welcome.cshtml"));
+
+
+        await _fluentEmail
+            .To(cleanEmail)
+            .Subject("Welcome to NeuroChord!")
+            .UsingTemplateFromEmbedded(welcomeTemplateName, model, assembly)
+            .SendAsync();
+    }
+}

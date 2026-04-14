@@ -6,6 +6,7 @@ namespace NeuroChord.Application.Services;
 public class AuthService : IAuthService
 {
     private readonly IJwtService _jwtService;
+    private readonly INeuroChordEmailService _neuroChordEmailService;
     private readonly ISecurityService _securityService;
     private readonly ISessionService _sessionService;
     private readonly IUnitOfWork _unitOfWork;
@@ -16,6 +17,7 @@ public class AuthService : IAuthService
         IUserService userService,
         IJwtService jwtService,
         IUnitOfWork unitOfWork,
+        INeuroChordEmailService neuroChordEmailService,
         ISecurityService securityService)
     {
         _sessionService = sessionService;
@@ -23,6 +25,7 @@ public class AuthService : IAuthService
         _jwtService = jwtService;
         _unitOfWork = unitOfWork;
         _securityService = securityService;
+        _neuroChordEmailService = neuroChordEmailService;
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, string ipAddress, string userAgent)
@@ -67,7 +70,7 @@ public class AuthService : IAuthService
             Email = request.Email,
             Password = request.Password
         });
-
+        await _neuroChordEmailService.SendWelcomeEmailAsync(user.Email);
         return user != null;
     }
 

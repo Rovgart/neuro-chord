@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -10,8 +11,14 @@ using NeuroChord.Infrastructure.Persistence;
 using NeuroChord.Infrastructure.Persistence.Repositories;
 using NeuroChord.Infrastructure.Services;
 
+var sender = new SmtpClient("127.0.0.1")
+{
+    Port = 1025
+};
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Services.AddFluentEmail("noreply@neurochord.com", "Neuro Chord System")
+    .AddRazorRenderer(typeof(EmailService))
+    .AddSmtpSender(sender);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -45,6 +52,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<INeuroChordEmailService, EmailService>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
