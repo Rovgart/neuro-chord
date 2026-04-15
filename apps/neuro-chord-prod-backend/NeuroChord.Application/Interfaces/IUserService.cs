@@ -9,6 +9,8 @@ public interface IUserService
     Task<UserDto> GetUserById(string id);
     Task<UserDto> UpdateUserStatusAsync(string id, bool isVerified);
     Task<UserDto> UpdateUserRoleAsync(string id, Role role);
+    Task<bool> MarkEmailAsVerifiedAsync(string email);
+
     Task<UserDto> CreateUser(CreateUserRequest request);
 
     Task DeleteUserAsync(string id);

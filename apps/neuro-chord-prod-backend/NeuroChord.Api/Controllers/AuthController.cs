@@ -51,6 +51,19 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string token, [FromHeader] string userAgent)
+    {
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        if (string.IsNullOrEmpty(token)) return BadRequest("Token is required.");
+
+        var result = await _authService.VerifyEmailAsync(token, ipAddress, userAgent);
+
+        if (!result) return BadRequest("Invalid or expired verification token.");
+
+        return Ok("Email verified successfully! You can now log in.");
+    }
+
     [HttpPost("refresh-token")]
     public async Task<ActionResult<AuthResponseDto>> RefreshToken([FromQuery] string refreshToken)
     {

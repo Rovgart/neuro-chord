@@ -10,7 +10,7 @@ public interface IAuthService
 
     Task<AuthResponseDto> RefreshTokenAsync(string refreshToken);
 
-    Task<AuthResponseDto> VerifyEmailAsync(string token, string ipAddress, string userAgent);
+    Task<bool> VerifyEmailAsync(string token, string ipAddress, string userAgent);
 
     Task LogoutAsync(string accessToken, string refreshToken);
     Task ForgotPasswordAsync(string email);

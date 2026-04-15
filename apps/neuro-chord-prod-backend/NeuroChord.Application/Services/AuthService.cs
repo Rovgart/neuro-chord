@@ -38,8 +38,9 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, string ipAddress, string userAgent)
     {
         var userInternal = await _userService.GetUserForAuthByEmail(request.Email);
+        Console.WriteLine(userInternal.PasswordHash);
 
-        if (userInternal == null || !_securityService.VerifyPassword(request.Password, userInternal.PasswordHash))
+        if (!_securityService.VerifyPassword(request.Password, userInternal.PasswordHash))
             throw new UnauthorizedAccessException("Invalid credentials");
 
         await _unitOfWork.BeginTransactionAsync();
@@ -58,7 +59,8 @@ public class AuthService : IAuthService
             {
                 Id = userInternal.Id,
                 Email = userInternal.Email,
-                Role = userInternal.Role
+                Role = userInternal.Role,
+                IsVerified = userInternal.IsVerified
             };
 
             return new AuthResponseDto(accessToken, refreshToken, userPublic);
@@ -79,11 +81,6 @@ public class AuthService : IAuthService
         });
         await GenerateVerificationTokenAsync(user.Email);
         return user != null;
-    }
-
-    public async Task<AuthResponseDto> VerifyEmailAsync(string token, string ipAddress, string userAgent)
-    {
-        throw new NotImplementedException("Wymaga serwisu do obsługi tokenów mailowych");
     }
 
     public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken)
@@ -145,6 +142,21 @@ public class AuthService : IAuthService
     public async Task ResetPasswordAsync(ResetPasswordRequestDto request)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<bool> VerifyEmailAsync(string token, string ipAddress, string userAgent)
+    {
+        var email = await _cache.GetStringAsync(token);
+
+        if (string.IsNullOrEmpty(email))
+            return false;
+
+        var isSuccess = await _userService.MarkEmailAsVerifiedAsync(email);
+
+        if (isSuccess)
+            await _cache.RemoveAsync(token);
+
+        return isSuccess;
     }
 
     public async Task GenerateVerificationTokenAsync(string email)

@@ -9,17 +9,17 @@ public class SecurityService : ISecurityService
 {
     public string HashPassword(string password)
     {
-        byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
-        byte[] salt = new byte[16];
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
+        var salt = new byte[16];
         RandomNumberGenerator.Fill(salt);
-        var argon2 = new Argon2i(passwordBytes)
+        var argon2 = new Argon2id(passwordBytes)
         {
             Salt = salt,
             MemorySize = 65536,
             DegreeOfParallelism = 8,
-            Iterations = 4,
+            Iterations = 4
         };
-        byte[] hash = argon2.GetBytes(32);
+        var hash = argon2.GetBytes(32);
         return $"{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
     }
 
@@ -28,10 +28,10 @@ public class SecurityService : ISecurityService
         var parts = hashedPasswordFromDb.Split('.');
         if (parts.Length != 2) return false;
 
-        byte[] salt = Convert.FromBase64String(parts[0]);
-        byte[] expectedHash = Convert.FromBase64String(parts[1]);
+        var salt = Convert.FromBase64String(parts[0]);
+        var expectedHash = Convert.FromBase64String(parts[1]);
 
-        byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
 
         using (var argon2 = new Argon2id(passwordBytes))
         {
@@ -40,7 +40,7 @@ public class SecurityService : ISecurityService
             argon2.Iterations = 4;
             argon2.MemorySize = 65536;
 
-            byte[] actualHash = argon2.GetBytes(32);
+            var actualHash = argon2.GetBytes(32);
 
             return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
         }

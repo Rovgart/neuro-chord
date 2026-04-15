@@ -37,7 +37,8 @@ public class UserService : IUserService
             Id = user.Id,
             Email = user.Email,
             PasswordHash = user.PasswordHash,
-            Role = user.Role.ToString()
+            Role = user.Role.ToString(),
+            IsVerified = user.IsVerified
         };
     }
 
@@ -52,7 +53,7 @@ public class UserService : IUserService
             PasswordHash = _securityService.HashPassword(request.Password),
             RegistrationStep = RegistrationStep.AccountCreated,
             IsVerified = false,
-            Role = Role.Student,
+            Role = Role.Unassigned,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -87,6 +88,16 @@ public class UserService : IUserService
         await _userRepository.DeleteUserAsync(id);
     }
 
+    public async Task<bool> MarkEmailAsVerifiedAsync(string email)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null) return false;
+
+        user.IsVerified = true;
+        await _userRepository.SaveChangesAsync();
+        return true;
+    }
+
     private static UserDto MapToDto(User user)
     {
         return new UserDto
@@ -94,8 +105,7 @@ public class UserService : IUserService
             Id = user.Id,
             Email = user.Email,
             Role = user.Role.ToString(),
-            IsVerified = user.IsVerified,
-            RegistrationStep = user.RegistrationStep
+            IsVerified = user.IsVerified
         };
     }
 }
