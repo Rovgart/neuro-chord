@@ -13,5 +13,7 @@ public interface IUserService
 
     Task<UserDto> CreateUser(CreateUserRequest request);
 
+    Task<bool> UpdateUserPasswordAsync(string email, string newPassword);
+
     Task DeleteUserAsync(string id);
 }

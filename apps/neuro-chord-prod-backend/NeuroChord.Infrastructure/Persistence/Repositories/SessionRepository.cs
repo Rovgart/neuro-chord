@@ -22,7 +22,7 @@ public class SessionRepository : ISessionRepository
     public async Task<Session?> GetByRefreshTokenAsync(string refreshToken)
     {
         return await _dbContext.Sessions
-            .FirstOrDefaultAsync(s => s.RefreshToken == refreshToken && !s.IsRevoked);
+            .FirstOrDefaultAsync(s => s.RefreshToken == refreshToken && !s.IsRevoked && s.ExpiresAt > DateTime.UtcNow);
     }
 
     public async Task AddAsync(Session session)
@@ -42,11 +42,28 @@ public class SessionRepository : ISessionRepository
             .Where(s => s.UserId == userId && !s.IsRevoked)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(s => s.IsRevoked, true)
-                .SetProperty(s => s.RevokedAt, DateTime.UtcNow));
+                .SetProperty(s => s.RevokedAt, DateTime.UtcNow)
+                .SetProperty(s => s.ExpiresAt, DateTime.UtcNow));
     }
 
     public async Task SaveChangesAsync()
     {
         await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task InsertRevokedSessionAsync(List<SessionArchive> archivedSessions)
+    {
+        await _dbContext.SessionArchives.AddRangeAsync(archivedSessions);
+    }
+
+    public async Task RemoveRevokedSessionsAsync(List<Session> revokedSessions)
+    {
+        _dbContext.Sessions.RemoveRange(revokedSessions);
+    }
+
+
+    public async Task<List<Session>> GetActiveSessionsAsync(string userId)
+    {
+        return await _dbContext.Sessions.Where(s => s.UserId == userId && !s.IsRevoked).ToListAsync();
     }
 }

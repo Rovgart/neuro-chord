@@ -10,6 +10,8 @@
 
     <ItemGroup>
         <EmbeddedResource Include="Templates\Welcome.cshtml"/>
+        <EmbeddedResource Include="Templates\ResetPassword.cshtml"/>
+
         <PackageReference Include="FluentEmail.Core" Version="3.0.2"/>
         <PackageReference Include="FluentEmail.Razor" Version="3.0.2"/>
         <PackageReference Include="FluentEmail.Smtp" Version="3.0.2"/>

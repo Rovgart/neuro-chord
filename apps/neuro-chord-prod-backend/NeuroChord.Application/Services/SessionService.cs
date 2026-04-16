@@ -1,5 +1,6 @@
 using NeuroChord.Application.Interfaces;
 using NeuroChordDomain.Entities;
+using NeuroChordDomain.Enums;
 
 namespace NeuroChord.Application.Services;
 
@@ -47,6 +48,9 @@ public class SessionService : ISessionService
             session.RevokedAt = DateTime.UtcNow;
             session.UpdatedAt = DateTime.UtcNow;
         }
+
+        await ArchiveRevokedSessionsAsync(refreshToken);
+        await _sessionRepository.SaveChangesAsync();
     }
 
     public async Task RevokeAllUserSessionsAsync(string userId)
@@ -57,5 +61,37 @@ public class SessionService : ISessionService
     public async Task<Session?> GetSessionByTokenAsync(string refreshToken)
     {
         return await _sessionRepository.GetByRefreshTokenAsync(refreshToken);
+    }
+
+    public async Task ArchiveRevokedSessionsAsync(string userId)
+    {
+        var revokedSessions = await _sessionRepository.GetActiveSessionsAsync(userId);
+        var archives = revokedSessions.Select(s => new SessionArchive
+        {
+            UserId = s.UserId,
+            RefreshToken = s.RefreshToken,
+            IpAddress = s.IpAddress,
+            UserAgent = s.UserAgent,
+            CreatedAt = s.CreatedAt,
+            ArchivedAt = DateTime.UtcNow,
+            RevokedAt = DateTime.UtcNow,
+            Reason = Reason.NewLogin
+        }).ToList();
+        await _sessionRepository.InsertRevokedSessionAsync(archives);
+        await _sessionRepository.RemoveRevokedSessionsAsync(revokedSessions);
+    }
+
+    public async Task<Session> VerifyRefreshToken(string userId, string refreshToken)
+    {
+        // 1. Pobierz sesję z bazy na podstawie UserId i Tokena
+        var session = await _sessionRepository.GetByIdAsync(userId);
+
+        if (session == null) throw new UnauthorizedAccessException("Refresh token is invalid.");
+
+        if (session.IsRevoked) throw new UnauthorizedAccessException("Refresh token has been revoked.");
+
+        if (session.ExpiresAt < DateTime.UtcNow) throw new UnauthorizedAccessException("Refresh token has expired.");
+
+        return session;
     }
 }

@@ -10,4 +10,8 @@ public interface ISessionRepository
     Task DeleteAsync(string sessionId);
     Task RevokeAllUserSessionsAsync(string userId);
     Task SaveChangesAsync();
+    Task<List<Session>> GetActiveSessionsAsync(string userId);
+
+    Task InsertRevokedSessionAsync(List<SessionArchive> archivedSessions);
+    Task RemoveRevokedSessionsAsync(List<Session> revokedSessions);
 }

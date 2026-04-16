@@ -7,7 +7,6 @@ using Microsoft.IdentityModel.Tokens;
 using NeuroChord.Application.Common.Security;
 using NeuroChord.Application.DTOs;
 using NeuroChord.Application.Interfaces;
-using NeuroChordDomain.Entities;
 
 namespace NeuroChord.Application.Services;
 
@@ -31,14 +30,15 @@ public class JwtService : IJwtService
         return Convert.ToBase64String(randomNumber);
     }
 
-    public string GenerateAccessToken(UserInternalAuthDto user, Session session)
+
+    public string GenerateAccessToken(AccessTokenPayload payload)
     {
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, user.Id),
-            new(JwtRegisteredClaimNames.Email, user.Email),
-            new(ClaimTypes.Role, user.Role),
-            new(ClaimTypes.Sid, session.Id),
+            new(JwtRegisteredClaimNames.Sub, payload.UserId),
+            new(JwtRegisteredClaimNames.Email, payload.Email),
+            new(ClaimTypes.Role, payload.Role),
+            new(ClaimTypes.Sid, payload.SessionId),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -55,5 +55,42 @@ public class JwtService : IJwtService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public async Task<ClaimsPrincipal> VerifyAccessToken(string accessToken)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.UTF8.GetBytes(_options.SecretKey);
+
+        var validationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidIssuer = _options.Issuer,
+            ValidateAudience = true,
+            ValidAudience = _options.Audience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+
+        try
+        {
+            var principal = tokenHandler.ValidateToken(accessToken, validationParameters, out var validatedToken);
+
+            if (validatedToken is JwtSecurityToken jwtToken &&
+                !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                throw new SecurityTokenException("Invalid token algorithm");
+
+            return principal;
+        }
+        catch (SecurityTokenExpiredException)
+        {
+            throw new UnauthorizedAccessException("Token has expired.");
+        }
+        catch (Exception)
+        {
+            throw new UnauthorizedAccessException("Invalid access token.");
+        }
     }
 }

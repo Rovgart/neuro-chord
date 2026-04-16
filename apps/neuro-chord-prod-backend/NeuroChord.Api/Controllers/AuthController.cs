@@ -1,8 +1,9 @@
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using NeuroChord.Application.DTOs;
 using NeuroChord.Application.Interfaces;
 
-namespace neuro_chord_prod_backend.Controllers;
+namespace NeuroChord.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
@@ -26,8 +27,9 @@ public class AuthController : ControllerBase
             var response = await _authService.LoginAsync(request, ipAddress, userAgent);
 
             SetRefreshTokenCookie(response.RefreshToken);
+            SetAccessTokenCookie(response.AccessToken);
 
-            return Ok(response);
+            return Ok(new { message = "Login Successful", response.User });
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -45,10 +47,20 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout([FromQuery] string refreshToken)
+    public async Task<IActionResult> Logout([FromQuery] string userId)
     {
-        await _authService.LogoutAsync(refreshToken, string.Empty);
-        return NoContent();
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddDays(-1)
+        };
+
+        Response.Cookies.Delete("accessToken", cookieOptions);
+        Response.Cookies.Delete("refreshToken", cookieOptions);
+        await _authService.LogoutAsync(userId);
+        return Ok(new { message = "Logout Successful" });
     }
 
     [HttpGet("verify-email")]
@@ -65,18 +77,51 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh-token")]
-    public async Task<ActionResult<AuthResponseDto>> RefreshToken([FromQuery] string refreshToken)
+    public async Task<ActionResult<AuthResponseDto>> RefreshToken()
     {
+        if (!Request.Cookies.TryGetValue("refreshToken", out var token) ||
+            !Request.Cookies.TryGetValue("accessToken", out var access))
+            return BadRequest("Tokens were not provided in cookies.");
         try
         {
-            var response = await _authService.RefreshTokenAsync(refreshToken);
+            var response = await _authService.RefreshTokenAsync(token, access);
             SetRefreshTokenCookie(response.RefreshToken);
+            SetAccessTokenCookie(response.RefreshToken);
+
             return Ok(response);
         }
         catch (UnauthorizedAccessException)
         {
+            Response.Cookies.Delete("refreshToken");
+            Response.Cookies.Delete("accessToken");
             return Unauthorized();
         }
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var resetToken = await _authService.InitResetPasswordAsync(request.Email);
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.Now.AddMinutes(15)
+        };
+        Response.Cookies.Append("X-Reset-Token", resetToken, cookieOptions);
+        return Ok(new { message = "If account exists, we've send PIN on given e-mail" });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> VerifyPin([FromBody] VerifyPinRequestDto request, [FromHeader] string userAgent,
+        [FromHeader] string ipAddress)
+    {
+        if (!Request.Cookies.TryGetValue("X-Reset-Token", out var token))
+            return BadRequest(new { message = "Session expired or lack of security token" });
+
+        await _authService.CompletePasswordResetAsync(request.Email, request.Pin, token, request.NewPassword);
+        return Ok(new { message = "Password successfully reset" });
     }
 
     private void SetRefreshTokenCookie(string refreshToken)
@@ -89,5 +134,17 @@ public class AuthController : ControllerBase
             Expires = DateTime.UtcNow.AddDays(7)
         };
         Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+    }
+
+    private void SetAccessTokenCookie(string accessToken)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddMinutes(15)
+        };
+        Response.Cookies.Append("accessToken", accessToken, cookieOptions);
     }
 }

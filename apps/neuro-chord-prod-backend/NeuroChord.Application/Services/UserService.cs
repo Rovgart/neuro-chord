@@ -98,6 +98,15 @@ public class UserService : IUserService
         return true;
     }
 
+    public async Task<bool> UpdateUserPasswordAsync(string email, string newPassword)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null) return false;
+        user.PasswordHash = newPassword;
+        await _userRepository.SaveChangesAsync();
+        return true;
+    }
+
     private static UserDto MapToDto(User user)
     {
         return new UserDto

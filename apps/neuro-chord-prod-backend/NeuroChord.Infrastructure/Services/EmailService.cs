@@ -1,4 +1,5 @@
 using FluentEmail.Core;
+using NeuroChord.Application.Emails;
 using NeuroChord.Application.Interfaces;
 
 namespace NeuroChord.Infrastructure.Services;
@@ -13,9 +14,22 @@ public class EmailService : INeuroChordEmailService
     }
 
 
-    public Task SendPasswordRecoveryPinAsync(string email, string pin)
+    public async Task SendPasswordRecoveryPinAsync(string email, string pin)
     {
-        throw new NotImplementedException();
+        var cleanEmail = email?.Trim();
+        var model = new ResetPasswordEmail { Email = cleanEmail, PIN = pin };
+
+        var assembly = GetType().Assembly;
+        var names = assembly.GetManifestResourceNames();
+
+        var recoveryTemplateName = names.FirstOrDefault(n => n.EndsWith("ResetPassword.cshtml"));
+        if (string.IsNullOrEmpty(recoveryTemplateName)) return;
+
+        await _fluentEmail
+            .To(cleanEmail)
+            .Subject("NeuroChord - Password Recovery PIN 🛡️")
+            .UsingTemplateFromEmbedded(recoveryTemplateName, model, assembly)
+            .SendAsync();
     }
 
     public Task SendVerificationLinkAsync(string email, string userName, string link)

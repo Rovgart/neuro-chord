@@ -1,10 +1,12 @@
+using System.Security.Claims;
 using NeuroChord.Application.DTOs;
-using NeuroChordDomain.Entities;
 
 namespace NeuroChord.Application.Interfaces;
 
 public interface IJwtService
 {
-    string GenerateAccessToken(UserInternalAuthDto user, Session session);
+    string GenerateAccessToken(AccessTokenPayload payload);
     string GenerateRefreshToken();
+
+    public Task<ClaimsPrincipal> VerifyAccessToken(string accessToken);
 }

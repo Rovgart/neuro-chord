@@ -9,4 +9,6 @@ public interface ISessionService
     Task RevokeSessionAsync(string refreshToken);
     Task RevokeAllUserSessionsAsync(string userId);
     Task<Session?> GetSessionByTokenAsync(string refreshToken);
+    Task ArchiveRevokedSessionsAsync(string userId);
+    Task<Session> VerifyRefreshToken(string userId, string refreshToken);
 }
