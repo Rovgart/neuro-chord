@@ -3,18 +3,22 @@ using NeuroChord.Application.DTOs.Profile;
 using NeuroChord.Application.Interfaces;
 using NeuroChordDomain.Entities;
 using NeuroChordDomain.Enums;
+using Org.BouncyCastle.Security;
 
 namespace NeuroChord.Application.Services;
 
 public class ProfileService : IProfileService
 {
     private readonly IProfileRepository _profileRepository;
+    private readonly IFileStorageService _storageService;
     private readonly IUserRepository _userRepository;
 
-    public ProfileService(IProfileRepository profileRepository, IUserRepository userRepository)
+    public ProfileService(IProfileRepository profileRepository, IUserRepository userRepository,
+        IFileStorageService storageService)
     {
         _profileRepository = profileRepository;
         _userRepository = userRepository;
+        _storageService = storageService;
     }
 
     public async Task<ProfileResponseDto> GetByUserIdAsync(string userId)
@@ -23,7 +27,6 @@ public class ProfileService : IProfileService
 
         if (profile == null) return null;
 
-        // Mapowanie ręczne (lub AutoMapper, jeśli go używasz)
         return new ProfileResponseDto(
             profile.Id,
             profile.DisplayName,
@@ -97,5 +100,26 @@ public class ProfileService : IProfileService
 
         await _profileRepository.CreateAsync(newProfile);
         return await _profileRepository.SaveChangesAsync();
+    }
+
+    public async Task<string> UploadAvatarAsync(string userId, Stream file, string fileName)
+    {
+        var imageUrl = await _storageService.UploadFileAsync(file, fileName);
+
+        var profile = await _profileRepository.GetByUserIdAsync(userId);
+        if (profile == null) return null;
+        profile.ImgUrl = imageUrl;
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        _profileRepository.Update(profile);
+
+        var success = await _profileRepository.SaveChangesAsync();
+        if (!success) throw new KeyException("Error during updating profile in db");
+        return imageUrl;
+    }
+
+    public Task<bool> DeleteProfileAsync(string userId)
+    {
+        throw new NotImplementedException();
     }
 }
