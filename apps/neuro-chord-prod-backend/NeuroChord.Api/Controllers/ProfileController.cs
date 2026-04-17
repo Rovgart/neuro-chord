@@ -12,12 +12,14 @@ namespace NeuroChord.Api.Controllers;
 [Route("api/profile")]
 public class ProfileController : ControllerBase
 {
+    private readonly ILogger<ProfileController> _logger;
     private readonly IProfileService _profileService;
 
 
-    public ProfileController(IProfileService profileService)
+    public ProfileController(IProfileService profileService, ILogger<ProfileController> logger)
     {
         _profileService = profileService;
+        _logger = logger;
     }
 
     [HttpGet("me")]
@@ -51,5 +53,33 @@ public class ProfileController : ControllerBase
         if (!result) return BadRequest("Onboarding failed or already completed.");
 
         return Ok(new { message = "Onboarding successful. Welcome to NeuroChord!" });
+    }
+
+    [Authorize]
+    [HttpPatch("avatar")]
+    public async Task<IActionResult> UpdateAvatar(IFormFile file)
+    {
+        if (file.Length == 0 || file == null) return BadRequest("No file was sent to update.");
+
+        if (file.Length > 15 * 1024 * 1024) return BadRequest("File is tool larger than 15MB.");
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".heic" };
+        var extension = Path.GetExtension(file.FileName).ToLower();
+        if (!allowedExtensions.Contains(extension)) return BadRequest("Invalid file format");
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null) return Unauthorized();
+        try
+        {
+            using var stream = file.OpenReadStream();
+            var resultUrl = await _profileService.UploadAvatarAsync(userId, stream, file.FileName);
+
+            return Ok(new { url = resultUrl });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during updating file for user: {UserId}. Plik: {FileName}", userId,
+                file.FileName);
+            return StatusCode(500, $"Error occured during updating: {ex.Message}");
+        }
     }
 }

@@ -9,4 +9,7 @@ public interface IProfileService
     Task<bool> UpdateProfileAsync(string userId, UpdateProfileDto dto);
 
     Task<bool> CreateProfileAsync(string userId, CreateProfileDto dto);
+
+    Task<string> UploadAvatarAsync(string userId, Stream file, string fileName);
+    Task<bool> DeleteProfileAsync(string userId);
 }

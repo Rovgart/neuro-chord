@@ -2,6 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net.Mail;
 using System.Security.Claims;
 using System.Text;
+using CloudinaryDotNet;
+using DotNetEnv;
 using FluentValidation;
 using Hangfire;
 using Hangfire.Redis.StackExchange;
@@ -18,6 +20,7 @@ using NeuroChord.Infrastructure.Persistence;
 using NeuroChord.Infrastructure.Persistence.Repositories;
 using NeuroChord.Infrastructure.Services;
 
+Env.Load();
 var sender = new SmtpClient("127.0.0.1")
 {
     Port = 1025
@@ -28,6 +31,13 @@ builder.Services.AddFluentEmail("noreply@neurochord.com", "Neuro Chord System")
     .AddRazorRenderer(typeof(EmailService))
     .AddSmtpSender(sender);
 builder.Services.AddControllers();
+var cloudinarySection = builder.Configuration.GetSection("Cloudinary");
+var cloudinaryAccount = new Account(
+    cloudinarySection["CloudName"],
+    cloudinarySection["ApiKey"],
+    cloudinarySection["ApiSecret"]
+);
+
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     var redisPassword = builder.Configuration["REDIS_PASSWORD"]
@@ -36,6 +46,8 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = $"127.0.0.1:6379,password={redisPassword},abortConnect=false";
     options.InstanceName = "NeuroChord_";
 });
+var cloudinary = new Cloudinary(cloudinaryAccount);
+builder.Services.AddSingleton(cloudinary);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddAuthentication(options =>
     {
@@ -105,6 +117,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DevelopConnection")));
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<INeuroChordEmailService, EmailService>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
@@ -116,6 +129,7 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
 builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IFileStorageService, CloudinaryStorageService>();
 
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
