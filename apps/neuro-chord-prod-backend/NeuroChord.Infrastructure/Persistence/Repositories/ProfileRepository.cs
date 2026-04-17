@@ -45,4 +45,9 @@ public class ProfileRepository : IProfileRepository
     {
         return await _context.Profiles.AnyAsync(p => p.UserId == userId);
     }
+
+    public async Task CreateAsync(Profile profile)
+    {
+        await _context.Profiles.AddAsync(profile);
+    }
 }

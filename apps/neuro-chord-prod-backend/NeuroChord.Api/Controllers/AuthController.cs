@@ -29,7 +29,7 @@ public class AuthController : ControllerBase
             SetRefreshTokenCookie(response.RefreshToken);
             SetAccessTokenCookie(response.AccessToken);
 
-            return Ok(new { message = "Login Successful", response.User });
+            return Ok(new { message = "Login Successful", response });
         }
         catch (UnauthorizedAccessException ex)
         {

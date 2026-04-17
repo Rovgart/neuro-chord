@@ -10,4 +10,6 @@ public interface IProfileRepository
     Task<bool> SaveChangesAsync();
 
     Task<bool> ProfileExistsAsync(string userId);
+
+    Task CreateAsync(Profile profile);
 }
