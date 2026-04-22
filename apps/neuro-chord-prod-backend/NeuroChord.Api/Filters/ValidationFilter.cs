@@ -1,0 +1,26 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+
+namespace NeuroChord.Api.Filters;
+
+public class ValidationFilter : IAsyncActionFilter
+{
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        // Sprawdzamy czy są błędy walidacji (które FluentValidation wrzuci do ModelState)
+        if (!context.ModelState.IsValid)
+        {
+            var errors = context.ModelState
+                .Where(x => x.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray()
+                );
+
+            context.Result = new BadRequestObjectResult(new { Errors = errors });
+            return;
+        }
+
+        await next();
+    }
+}

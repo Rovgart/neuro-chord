@@ -13,7 +13,7 @@ public class ProfileRepository : IProfileRepository
         _context = context;
     }
 
-    public async Task<Profile?> GetByUserIdAsync(string userId)
+    public async Task<Profile?> GetByUserIdAsync(Guid userId)
     {
         return await _context.Profiles
             .Include(p => p.User)
@@ -22,7 +22,7 @@ public class ProfileRepository : IProfileRepository
             .FirstOrDefaultAsync(p => p.UserId == userId);
     }
 
-    public async Task<Profile?> GetByIdAsync(string id)
+    public async Task<Profile?> GetByIdAsync(Guid id)
     {
         return await _context.Profiles
             .Include(p => p.StudentProfile)
@@ -41,13 +41,13 @@ public class ProfileRepository : IProfileRepository
         return await _context.SaveChangesAsync() > 0;
     }
 
-    public async Task<bool> ProfileExistsAsync(string userId)
-    {
-        return await _context.Profiles.AnyAsync(p => p.UserId == userId);
-    }
-
     public async Task CreateAsync(Profile profile)
     {
         await _context.Profiles.AddAsync(profile);
+    }
+
+    public async Task<bool> ProfileExistsAsync(Guid userId)
+    {
+        return await _context.Profiles.AnyAsync(p => p.User.Id == userId);
     }
 }

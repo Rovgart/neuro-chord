@@ -13,22 +13,6 @@ public class SessionService : ISessionService
         _sessionRepository = sessionRepository;
     }
 
-    public async Task<Session> CreateSessionAsync(string userId, string ipAddress, string userAgent)
-    {
-        var session = new Session
-        {
-            UserId = userId,
-            IpAddress = ipAddress,
-            UserAgent = userAgent,
-            RefreshToken = Guid.NewGuid().ToString(),
-            ExpiresAt = DateTime.UtcNow.AddDays(7)
-        };
-
-        await _sessionRepository.AddAsync(session);
-
-        return session;
-    }
-
     public async Task<bool> IsSessionValidAsync(string refreshToken)
     {
         var session = await _sessionRepository.GetByRefreshTokenAsync(refreshToken);
@@ -38,22 +22,7 @@ public class SessionService : ISessionService
                session.ExpiresAt > DateTime.UtcNow;
     }
 
-    public async Task RevokeSessionAsync(string refreshToken)
-    {
-        var session = await _sessionRepository.GetByRefreshTokenAsync(refreshToken);
-
-        if (session != null)
-        {
-            session.IsRevoked = true;
-            session.RevokedAt = DateTime.UtcNow;
-            session.UpdatedAt = DateTime.UtcNow;
-        }
-
-        await ArchiveRevokedSessionsAsync(refreshToken);
-        await _sessionRepository.SaveChangesAsync();
-    }
-
-    public async Task RevokeAllUserSessionsAsync(string userId)
+    public async Task RevokeAllUserSessionsAsync(Guid userId)
     {
         await _sessionRepository.RevokeAllUserSessionsAsync(userId);
     }
@@ -63,7 +32,7 @@ public class SessionService : ISessionService
         return await _sessionRepository.GetByRefreshTokenAsync(refreshToken);
     }
 
-    public async Task ArchiveRevokedSessionsAsync(string userId)
+    public async Task ArchiveRevokedSessionsAsync(Guid userId)
     {
         var revokedSessions = await _sessionRepository.GetActiveSessionsAsync(userId);
         var archives = revokedSessions.Select(s => new SessionArchive
@@ -81,7 +50,24 @@ public class SessionService : ISessionService
         await _sessionRepository.RemoveRevokedSessionsAsync(revokedSessions);
     }
 
-    public async Task<Session> VerifyRefreshToken(string userId, string refreshToken)
+    public async Task<Session> CreateSessionAsync(Guid userId, string ipAddress, string userAgent)
+    {
+        var session = new Session
+        {
+            UserId = userId,
+            IpAddress = ipAddress,
+            UserAgent = userAgent,
+            RefreshToken = Guid.NewGuid().ToString(),
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
+        };
+
+        await _sessionRepository.AddAsync(session);
+
+        return session;
+    }
+
+
+    public async Task<Session> VerifyRefreshToken(Guid userId, string refreshToken)
     {
         // 1. Pobierz sesję z bazy na podstawie UserId i Tokena
         var session = await _sessionRepository.GetByIdAsync(userId);
@@ -93,5 +79,28 @@ public class SessionService : ISessionService
         if (session.ExpiresAt < DateTime.UtcNow) throw new UnauthorizedAccessException("Refresh token has expired.");
 
         return session;
+    }
+
+
+    public async Task RevokeSessionAsync(Guid sessionId, Reason reason)
+    {
+        var session = await _sessionRepository.GetByIdAsync(sessionId);
+        if (session == null) return;
+
+        var archive = new SessionArchive
+        {
+            UserId = session.UserId,
+            RefreshToken = session.RefreshToken,
+            IpAddress = session.IpAddress,
+            UserAgent = session.UserAgent,
+            CreatedAt = session.CreatedAt,
+            ArchivedAt = DateTime.UtcNow,
+            RevokedAt = DateTime.UtcNow,
+            Reason = reason
+        };
+
+        await _sessionRepository.AddArchiveAsync(archive);
+        _sessionRepository.Remove(session);
+        await _sessionRepository.SaveChangesAsync();
     }
 }

@@ -13,7 +13,7 @@ public class SessionRepository : ISessionRepository
         _dbContext = dbContext;
     }
 
-    public async Task<Session?> GetByIdAsync(string sessionId)
+    public async Task<Session?> GetByIdAsync(Guid sessionId)
     {
         return await _dbContext.Sessions
             .FirstOrDefaultAsync(s => s.Id == sessionId);
@@ -30,20 +30,10 @@ public class SessionRepository : ISessionRepository
         await _dbContext.Sessions.AddAsync(session);
     }
 
-    public async Task DeleteAsync(string sessionId)
+    public async Task DeleteAsync(Guid sessionId)
     {
         var session = await GetByIdAsync(sessionId);
         if (session != null) _dbContext.Sessions.Remove(session);
-    }
-
-    public async Task RevokeAllUserSessionsAsync(string userId)
-    {
-        await _dbContext.Sessions
-            .Where(s => s.UserId == userId && !s.IsRevoked)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(s => s.IsRevoked, true)
-                .SetProperty(s => s.RevokedAt, DateTime.UtcNow)
-                .SetProperty(s => s.ExpiresAt, DateTime.UtcNow));
     }
 
     public async Task SaveChangesAsync()
@@ -56,14 +46,34 @@ public class SessionRepository : ISessionRepository
         await _dbContext.SessionArchives.AddRangeAsync(archivedSessions);
     }
 
+    public async Task AddArchiveAsync(SessionArchive archive)
+    {
+        await _dbContext.SessionArchives.AddAsync(archive);
+    }
+
     public async Task RemoveRevokedSessionsAsync(List<Session> revokedSessions)
     {
         _dbContext.Sessions.RemoveRange(revokedSessions);
     }
 
+    public async Task RevokeAllUserSessionsAsync(Guid userId)
+    {
+        await _dbContext.Sessions
+            .Where(s => s.UserId == userId && !s.IsRevoked)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(s => s.IsRevoked, true)
+                .SetProperty(s => s.RevokedAt, DateTime.UtcNow)
+                .SetProperty(s => s.ExpiresAt, DateTime.UtcNow));
+    }
 
-    public async Task<List<Session>> GetActiveSessionsAsync(string userId)
+
+    public async Task<List<Session>> GetActiveSessionsAsync(Guid userId)
     {
         return await _dbContext.Sessions.Where(s => s.UserId == userId && !s.IsRevoked).ToListAsync();
+    }
+
+    public void Remove(Session session)
+    {
+        _dbContext.Sessions.Remove(session);
     }
 }

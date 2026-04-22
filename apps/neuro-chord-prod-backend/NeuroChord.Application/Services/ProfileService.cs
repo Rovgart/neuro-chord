@@ -21,18 +21,18 @@ public class ProfileService : IProfileService
         _storageService = storageService;
     }
 
-    public async Task<ProfileResponseDto> GetByUserIdAsync(string userId)
+    public async Task<ProfileResponseDto> GetByUserIdAsync(Guid userId)
     {
         var profile = await _profileRepository.GetByUserIdAsync(userId);
 
         if (profile == null) return null;
 
         return new ProfileResponseDto(
-            profile.Id,
+            profile.Id.ToString(),
             profile.DisplayName,
             profile.Description,
             profile.ImgUrl,
-            profile.User.Role.ToString(), // Pobieramy rolę z powiązanego Usera
+            profile.User.Role.ToString(),
             profile.StudentProfile != null
                 ? new StudentProfileDto(profile.StudentProfile.Username, profile.StudentProfile.ExperienceLevel)
                 : null,
@@ -44,28 +44,7 @@ public class ProfileService : IProfileService
         );
     }
 
-    public async Task<bool> UpdateProfileAsync(string userId, UpdateProfileDto dto)
-    {
-        var profile = await _profileRepository.GetByUserIdAsync(userId);
-        if (profile == null) return false;
-
-        if (dto.DisplayName != null) profile.DisplayName = dto.DisplayName;
-        if (dto.Description != null) profile.Description = dto.Description;
-        if (dto.ImgUrl != null) profile.ImgUrl = dto.ImgUrl;
-
-        if (profile.TeacherProfile != null)
-        {
-            if (dto.Specialization != null) profile.TeacherProfile.Specialization = dto.Specialization;
-            if (dto.Education != null) profile.TeacherProfile.Education = dto.Education;
-        }
-
-        profile.UpdatedAt = DateTime.UtcNow;
-
-        _profileRepository.Update(profile);
-        return await _profileRepository.SaveChangesAsync();
-    }
-
-    public async Task<bool> CreateProfileAsync(string userId, CreateProfileDto dto)
+    public async Task<bool> CreateProfileAsync(Guid userId, CreateProfileDto dto)
     {
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null || user.OnboardingComplete) return false;
@@ -102,7 +81,28 @@ public class ProfileService : IProfileService
         return await _profileRepository.SaveChangesAsync();
     }
 
-    public async Task<string> UploadAvatarAsync(string userId, Stream file, string fileName)
+    public async Task<bool> UpdateProfileAsync(Guid userId, UpdateProfileDto dto)
+    {
+        var profile = await _profileRepository.GetByUserIdAsync(userId);
+        if (profile == null) return false;
+
+        if (dto.DisplayName != null) profile.DisplayName = dto.DisplayName;
+        if (dto.Description != null) profile.Description = dto.Description;
+        if (dto.ImgUrl != null) profile.ImgUrl = dto.ImgUrl;
+
+        if (profile.TeacherProfile != null)
+        {
+            if (dto.Specialization != null) profile.TeacherProfile.Specialization = dto.Specialization;
+            if (dto.Education != null) profile.TeacherProfile.Education = dto.Education;
+        }
+
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        _profileRepository.Update(profile);
+        return await _profileRepository.SaveChangesAsync();
+    }
+
+    public async Task<string> UploadAvatarAsync(Guid userId, Stream file, string fileName)
     {
         var imageUrl = await _storageService.UploadFileAsync(file, fileName);
 
@@ -118,7 +118,7 @@ public class ProfileService : IProfileService
         return imageUrl;
     }
 
-    public Task<bool> DeleteProfileAsync(string userId)
+    public Task<bool> DeleteProfileAsync(Guid userId)
     {
         throw new NotImplementedException();
     }

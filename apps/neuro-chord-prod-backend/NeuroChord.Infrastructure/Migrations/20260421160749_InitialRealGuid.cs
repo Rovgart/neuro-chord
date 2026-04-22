@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace NeuroChord.Infrastructure.Persistence.Migrations
+namespace NeuroChord.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialRealGuid : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,7 +15,7 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 name: "Campaigns",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Source = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     CampaignName = table.Column<string>(type: "text", nullable: false),
@@ -29,11 +29,24 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Instruments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Instruments", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    CampaignId = table.Column<string>(type: "text", nullable: true),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CampaignId = table.Column<Guid>(type: "uuid", nullable: true),
                     Email = table.Column<string>(type: "text", nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
                     Role = table.Column<int>(type: "integer", nullable: false),
@@ -54,11 +67,31 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Folders",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    OwnerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Folders", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Folders_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PasswordResets",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    UserId = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     IsUsed = table.Column<bool>(type: "boolean", nullable: false),
                     IpAddress = table.Column<string>(type: "text", nullable: true),
                     Token = table.Column<string>(type: "text", nullable: false),
@@ -81,8 +114,8 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 name: "Profiles",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    UserId = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     DisplayName = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     ImgUrl = table.Column<string>(type: "text", nullable: false),
@@ -104,10 +137,12 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 name: "SessionArchives",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    UserId = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserAgent = table.Column<string>(type: "text", nullable: false),
                     IpAddress = table.Column<string>(type: "text", nullable: false),
+                    RefreshToken = table.Column<string>(type: "text", nullable: false),
+                    RevokedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ArchivedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Reason = table.Column<int>(type: "integer", nullable: false)
@@ -127,7 +162,7 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 name: "Sessions",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserAgent = table.Column<string>(type: "text", nullable: false),
                     IpAddress = table.Column<string>(type: "text", nullable: false),
                     RefreshToken = table.Column<string>(type: "text", nullable: false),
@@ -136,7 +171,7 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     RevokedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UserId = table.Column<string>(type: "text", nullable: false)
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -153,9 +188,9 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 name: "Verification",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Token = table.Column<string>(type: "text", nullable: false),
-                    UserId = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: true),
                     IsUsed = table.Column<bool>(type: "boolean", nullable: false),
                     ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -173,11 +208,43 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Materials",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Topic = table.Column<string>(type: "text", nullable: false),
+                    Url = table.Column<string>(type: "text", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    OwnerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    IsPublic = table.Column<bool>(type: "boolean", nullable: false),
+                    FolderId = table.Column<Guid>(type: "uuid", nullable: true),
+                    RequiresSubscription = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Materials", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Materials_Folders_FolderId",
+                        column: x => x.FolderId,
+                        principalTable: "Folders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_Materials_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "StudentsProfile",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    ProfileId = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProfileId = table.Column<Guid>(type: "uuid", nullable: false),
                     Username = table.Column<string>(type: "text", nullable: false),
                     ExperienceLevel = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -196,8 +263,8 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 name: "TeacherProfiles",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    ProfileId = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProfileId = table.Column<Guid>(type: "uuid", nullable: false),
                     Specialization = table.Column<string>(type: "text", nullable: false),
                     Education = table.Column<string>(type: "text", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -213,6 +280,75 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "SharedResources",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaterialId = table.Column<Guid>(type: "uuid", nullable: true),
+                    TargetId = table.Column<Guid>(type: "uuid", nullable: true),
+                    TargetType = table.Column<int>(type: "integer", nullable: false),
+                    QuizId = table.Column<Guid>(type: "uuid", nullable: true),
+                    FolderId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AccessLevel = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SharedResources", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SharedResources_Folders_FolderId",
+                        column: x => x.FolderId,
+                        principalTable: "Folders",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_SharedResources_Materials_MaterialId",
+                        column: x => x.MaterialId,
+                        principalTable: "Materials",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TeacherInstruments",
+                columns: table => new
+                {
+                    TeacherId = table.Column<Guid>(type: "uuid", nullable: false),
+                    InstrumentId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TeacherInstruments", x => new { x.TeacherId, x.InstrumentId });
+                    table.ForeignKey(
+                        name: "FK_TeacherInstruments_Instruments_InstrumentId",
+                        column: x => x.InstrumentId,
+                        principalTable: "Instruments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TeacherInstruments_TeacherProfiles_TeacherId",
+                        column: x => x.TeacherId,
+                        principalTable: "TeacherProfiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Folders_OwnerId",
+                table: "Folders",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Materials_FolderId",
+                table: "Materials",
+                column: "FolderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Materials_OwnerId",
+                table: "Materials",
+                column: "OwnerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PasswordResets_UserId",
@@ -236,10 +372,25 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SharedResources_FolderId",
+                table: "SharedResources",
+                column: "FolderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SharedResources_MaterialId",
+                table: "SharedResources",
+                column: "MaterialId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_StudentsProfile_ProfileId",
                 table: "StudentsProfile",
                 column: "ProfileId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TeacherInstruments_InstrumentId",
+                table: "TeacherInstruments",
+                column: "InstrumentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TeacherProfiles_ProfileId",
@@ -271,13 +422,28 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                 name: "Sessions");
 
             migrationBuilder.DropTable(
+                name: "SharedResources");
+
+            migrationBuilder.DropTable(
                 name: "StudentsProfile");
+
+            migrationBuilder.DropTable(
+                name: "TeacherInstruments");
+
+            migrationBuilder.DropTable(
+                name: "Verification");
+
+            migrationBuilder.DropTable(
+                name: "Materials");
+
+            migrationBuilder.DropTable(
+                name: "Instruments");
 
             migrationBuilder.DropTable(
                 name: "TeacherProfiles");
 
             migrationBuilder.DropTable(
-                name: "Verification");
+                name: "Folders");
 
             migrationBuilder.DropTable(
                 name: "Profiles");

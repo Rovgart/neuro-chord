@@ -37,8 +37,9 @@ public class JwtService : IJwtService
         {
             new(JwtRegisteredClaimNames.Sub, payload.UserId),
             new(JwtRegisteredClaimNames.Email, payload.Email),
-            new(ClaimTypes.Role, payload.Role),
-            new(ClaimTypes.Sid, payload.SessionId),
+            new(JwtRegisteredClaimNames.Sid, payload.SessionId),
+            new("role", payload.Role),
+            new("profile_id", payload.ProfileId),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

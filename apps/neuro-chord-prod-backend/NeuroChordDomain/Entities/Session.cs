@@ -1,11 +1,8 @@
-using Visus.Cuid;
-
 namespace NeuroChordDomain.Entities;
 
 public class Session
 {
-    // Cuid2(24) daje świetną entropię
-    public string Id { get; set; } = new Cuid2(24).ToString();
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     public string UserAgent { get; set; } = string.Empty;
     public string IpAddress { get; set; } = string.Empty;
@@ -17,6 +14,6 @@ public class Session
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public required string UserId { get; set; }
+    public required Guid UserId { get; set; }
     public virtual User User { get; set; } = null!;
 }

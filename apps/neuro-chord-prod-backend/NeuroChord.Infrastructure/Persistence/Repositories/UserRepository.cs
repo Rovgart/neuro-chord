@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NeuroChord.Application.DTOs;
 using NeuroChord.Application.Interfaces;
 using NeuroChordDomain.Entities;
 using NeuroChordDomain.Enums;
@@ -14,7 +15,7 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    public async Task<User?> GetByIdAsync(string id)
+    public async Task<User?> GetByIdAsync(Guid id)
     {
         return await _context.Users.FindAsync(id);
     }
@@ -24,30 +25,46 @@ public class UserRepository : IUserRepository
         await _context.Users.AddAsync(user);
     }
 
-    public async Task<User?> GetByEmailAsync(string email)
-    {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-    }
-
     public async Task<bool> SaveChangesAsync()
     {
         return await _context.SaveChangesAsync() > 0;
     }
 
-    public async Task UpdateRoleAsync(string id, Role role)
+    public async Task UpdateRoleAsync(Guid id, Role role)
     {
         await _context.Users.Where(u => u.Id == id)
             .ExecuteUpdateAsync(setters => setters.SetProperty(u => u.Role, role));
     }
 
-    public async Task UpdateVerificationStatusAsync(string id, bool isVerified)
+    public async Task UpdateVerificationStatusAsync(Guid id, bool isVerified)
     {
         await _context.Users.Where(u => u.Id == id)
             .ExecuteUpdateAsync(setters => setters.SetProperty(u => u.IsVerified, isVerified));
     }
 
-    public async Task DeleteUserAsync(string id)
+    public async Task DeleteUserAsync(Guid id)
     {
         await _context.Users.Where(u => u.Id == id).ExecuteDeleteAsync();
+    }
+
+    public async Task<UserInternalAuthDto?> GetByEmailAsync(string email)
+    {
+        return await _context.Users
+            .Where(u => u.Email == email)
+            .Select(u => new UserInternalAuthDto
+            {
+                Id = u.Id,
+                Email = u.Email,
+                PasswordHash = u.PasswordHash,
+                Role = u.Role.ToString(),
+                IsVerified = u.IsVerified,
+                ProfileId = u.Profile != null ? u.Profile.Id : null
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<User?> GetUserEntityByEmailAsync(string email)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
     }
 }

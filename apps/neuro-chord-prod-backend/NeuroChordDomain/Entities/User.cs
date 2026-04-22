@@ -1,12 +1,11 @@
 using NeuroChordDomain.Enums;
-using Visus.Cuid;
 
 namespace NeuroChordDomain.Entities;
 
 public class User
 {
-    public string Id { get; set; } = new Cuid2(24).ToString();
-    public string? CampaignId { get; set; } = null;
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid? CampaignId { get; set; } = null;
 
     public virtual Campaign? Campaign { get; set; }
     public string Email { get; set; } = string.Empty;
@@ -21,7 +20,7 @@ public class User
     public virtual ICollection<Session> Sessions { get; set; } = new List<Session>();
     public virtual ICollection<SessionArchive> SessionArchives { get; set; } = new List<SessionArchive>();
     public virtual ICollection<PasswordReset> PasswordResets { get; set; } = new List<PasswordReset>();
-
+    public virtual ICollection<Material> Materials { get; set; } = new List<Material>();
 
     public virtual Profile? Profile { get; set; }
 }

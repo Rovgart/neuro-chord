@@ -1,12 +1,11 @@
 using NeuroChordDomain.Enums;
-using Visus.Cuid;
 
 namespace NeuroChordDomain.Entities;
 
 public class SessionArchive
 {
-    public string Id { get; set; } = new Cuid2(24).ToString();
-    public string UserId { get; set; } = string.Empty;
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid UserId { get; set; }
     public string UserAgent { get; set; } = string.Empty;
     public string IpAddress { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;

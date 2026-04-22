@@ -2,21 +2,18 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NeuroChord.Infrastructure.Persistence;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace NeuroChord.Infrastructure.Persistence.Migrations
+namespace NeuroChord.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260413164426_InitialCreate")]
-    partial class InitialCreate
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -27,8 +24,9 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("NeuroChordDomain.Entities.Campaign", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<string>("CampaignName")
                         .IsRequired()
@@ -57,10 +55,96 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.ToTable("Campaigns");
                 });
 
+            modelBuilder.Entity("NeuroChordDomain.Entities.Folder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Folders");
+                });
+
+            modelBuilder.Entity("NeuroChordDomain.Entities.Instrument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Instruments");
+                });
+
+            modelBuilder.Entity("NeuroChordDomain.Entities.Material", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("FolderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("RequiresSubscription")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Topic")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FolderId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Materials");
+                });
+
             modelBuilder.Entity("NeuroChordDomain.Entities.PasswordReset", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -81,9 +165,8 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -94,8 +177,9 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("NeuroChordDomain.Entities.Profile", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -115,9 +199,8 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -129,8 +212,9 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("NeuroChordDomain.Entities.Session", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -159,9 +243,8 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -172,8 +255,9 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("NeuroChordDomain.Entities.SessionArchive", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("ArchivedAt")
                         .HasColumnType("timestamp with time zone");
@@ -188,13 +272,19 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.Property<int>("Reason")
                         .HasColumnType("integer");
 
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("UserAgent")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -203,17 +293,57 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.ToTable("SessionArchives");
                 });
 
+            modelBuilder.Entity("NeuroChordDomain.Entities.SharedResources", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccessLevel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("FolderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("MaterialId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("QuizId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TargetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TargetType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FolderId");
+
+                    b.HasIndex("MaterialId");
+
+                    b.ToTable("SharedResources");
+                });
+
             modelBuilder.Entity("NeuroChordDomain.Entities.StudentProfile", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<int>("ExperienceLevel")
                         .HasColumnType("integer");
 
-                    b.Property<string>("ProfileId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -227,10 +357,26 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.ToTable("StudentsProfile");
                 });
 
+            modelBuilder.Entity("NeuroChordDomain.Entities.TeacherInstrument", b =>
+                {
+                    b.Property<Guid>("TeacherId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("InstrumentId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("TeacherId", "InstrumentId");
+
+                    b.HasIndex("InstrumentId");
+
+                    b.ToTable("TeacherInstruments");
+                });
+
             modelBuilder.Entity("NeuroChordDomain.Entities.TeacherProfile", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -238,9 +384,8 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.Property<string>("Education")
                         .HasColumnType("text");
 
-                    b.Property<string>("ProfileId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Specialization")
                         .IsRequired()
@@ -259,11 +404,12 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("NeuroChordDomain.Entities.User", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
-                    b.Property<string>("CampaignId")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("CampaignId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -300,8 +446,9 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("NeuroChordDomain.Entities.Verification", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -319,15 +466,43 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
 
                     b.ToTable("Verification");
+                });
+
+            modelBuilder.Entity("NeuroChordDomain.Entities.Folder", b =>
+                {
+                    b.HasOne("NeuroChordDomain.Entities.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("NeuroChordDomain.Entities.Material", b =>
+                {
+                    b.HasOne("NeuroChordDomain.Entities.Folder", "Folder")
+                        .WithMany("Materials")
+                        .HasForeignKey("FolderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("NeuroChordDomain.Entities.User", "Owner")
+                        .WithMany("Materials")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Folder");
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("NeuroChordDomain.Entities.PasswordReset", b =>
@@ -374,6 +549,23 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("NeuroChordDomain.Entities.SharedResources", b =>
+                {
+                    b.HasOne("NeuroChordDomain.Entities.Folder", "Folder")
+                        .WithMany()
+                        .HasForeignKey("FolderId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("NeuroChordDomain.Entities.Material", "Material")
+                        .WithMany()
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Folder");
+
+                    b.Navigation("Material");
+                });
+
             modelBuilder.Entity("NeuroChordDomain.Entities.StudentProfile", b =>
                 {
                     b.HasOne("NeuroChordDomain.Entities.Profile", "Profile")
@@ -383,6 +575,25 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Profile");
+                });
+
+            modelBuilder.Entity("NeuroChordDomain.Entities.TeacherInstrument", b =>
+                {
+                    b.HasOne("NeuroChordDomain.Entities.Instrument", "Instrument")
+                        .WithMany("TeacherInstruments")
+                        .HasForeignKey("InstrumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NeuroChordDomain.Entities.TeacherProfile", "TeacherProfile")
+                        .WithMany("TeacherInstruments")
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Instrument");
+
+                    b.Navigation("TeacherProfile");
                 });
 
             modelBuilder.Entity("NeuroChordDomain.Entities.TeacherProfile", b =>
@@ -410,8 +621,7 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.HasOne("NeuroChordDomain.Entities.User", "User")
                         .WithMany("Verifications")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("User");
                 });
@@ -421,6 +631,16 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.Navigation("Users");
                 });
 
+            modelBuilder.Entity("NeuroChordDomain.Entities.Folder", b =>
+                {
+                    b.Navigation("Materials");
+                });
+
+            modelBuilder.Entity("NeuroChordDomain.Entities.Instrument", b =>
+                {
+                    b.Navigation("TeacherInstruments");
+                });
+
             modelBuilder.Entity("NeuroChordDomain.Entities.Profile", b =>
                 {
                     b.Navigation("StudentProfile");
@@ -428,8 +648,15 @@ namespace NeuroChord.Infrastructure.Persistence.Migrations
                     b.Navigation("TeacherProfile");
                 });
 
+            modelBuilder.Entity("NeuroChordDomain.Entities.TeacherProfile", b =>
+                {
+                    b.Navigation("TeacherInstruments");
+                });
+
             modelBuilder.Entity("NeuroChordDomain.Entities.User", b =>
                 {
+                    b.Navigation("Materials");
+
                     b.Navigation("PasswordResets");
 
                     b.Navigation("Profile");

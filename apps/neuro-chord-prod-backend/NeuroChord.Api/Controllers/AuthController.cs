@@ -1,5 +1,7 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using NeuroChord.Api.Extensions;
 using NeuroChord.Application.DTOs;
 using NeuroChord.Application.Interfaces;
 
@@ -18,10 +20,12 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginRequestDto request,
-        [FromHeader] string userAgent)
+        [FromHeader] string userAgent, [FromServices] IValidator<LoginRequestDto> validator)
     {
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-
+        var validationResult = await validator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+            return BadRequest(new { Errors = validationResult.Errors.Select(e => e.ErrorMessage) });
         try
         {
             var response = await _authService.LoginAsync(request, ipAddress, userAgent);
@@ -38,8 +42,13 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request,
+        [FromServices] IValidator<RegisterRequestDto> validator)
     {
+        var validationResult = await validator.ValidateAsync(request);
+        if (!validationResult.IsValid)
+            return BadRequest(new { Errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+
         var result = await _authService.RegisterAsync(request);
         if (!result) return BadRequest(new { message = "Registration failed" });
 
@@ -47,8 +56,10 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout([FromQuery] string userId)
+    public async Task<IActionResult> Logout()
     {
+        var userId = User.GetUserId();
+
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
@@ -86,7 +97,7 @@ public class AuthController : ControllerBase
         {
             var response = await _authService.RefreshTokenAsync(token, access);
             SetRefreshTokenCookie(response.RefreshToken);
-            SetAccessTokenCookie(response.RefreshToken);
+            SetAccessTokenCookie(response.AccessToken);
 
             return Ok(response);
         }

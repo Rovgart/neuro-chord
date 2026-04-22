@@ -1,6 +1,7 @@
-using System.Security.Claims;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NeuroChord.Api.Extensions;
 using NeuroChord.Application.Dtos.Profile;
 using NeuroChord.Application.DTOs.Profile;
 using NeuroChord.Application.Interfaces;
@@ -25,9 +26,7 @@ public class ProfileController : ControllerBase
     [HttpGet("me")]
     public async Task<ActionResult<ProfileResponseDto>> GetMyProfile()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (userId == null) return Unauthorized(new { message = "Given profile doesn't exist" });
+        var userId = User.GetUserId();
 
         var profile = await _profileService.GetByUserIdAsync(userId);
         return Ok(profile);
@@ -37,16 +36,27 @@ public class ProfileController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ProfileResponseDto>> GetUserProfile(string id)
     {
-        var profile = await _profileService.GetByUserIdAsync(id);
+        if (string.IsNullOrEmpty(id)) return NotFound(new { message = "User not found " });
+        var userId = Guid.Parse(id);
+        var profile = await _profileService.GetByUserIdAsync(userId);
         return Ok(profile);
     }
 
     [Authorize]
     [HttpPost("onboarding")]
-    public async Task<IActionResult> CompleteOnboarding([FromBody] CreateProfileDto dto)
+    public async Task<IActionResult> CompleteOnboarding([FromBody] CreateProfileDto dto,
+        [FromServices] IValidator<CreateProfileDto> validator)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null) return Unauthorized();
+        var validationResult = await validator.ValidateAsync(dto);
+
+        if (!validationResult.IsValid)
+            return BadRequest(new
+            {
+                message = "Validation failed",
+                errors = validationResult.Errors.Select(e => e.ErrorMessage)
+            });
+        var userId = User.GetUserId();
+        _logger.LogDebug("User: {UserId}", userId);
 
         var result = await _profileService.CreateProfileAsync(userId, dto);
 
@@ -54,6 +64,7 @@ public class ProfileController : ControllerBase
 
         return Ok(new { message = "Onboarding successful. Welcome to NeuroChord!" });
     }
+
 
     [Authorize]
     [HttpPatch("avatar")]
@@ -66,8 +77,7 @@ public class ProfileController : ControllerBase
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".heic" };
         var extension = Path.GetExtension(file.FileName).ToLower();
         if (!allowedExtensions.Contains(extension)) return BadRequest("Invalid file format");
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null) return Unauthorized();
+        var userId = User.GetUserId();
         try
         {
             using var stream = file.OpenReadStream();

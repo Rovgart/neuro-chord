@@ -19,17 +19,9 @@ public class UserService : IUserService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<UserDto> GetUserById(string id)
-    {
-        var user = await _userRepository.GetByIdAsync(id);
-        if (user == null) throw new NotFoundException($"User with id {id} not found");
-
-        return MapToDto(user);
-    }
-
     public async Task<UserInternalAuthDto> GetUserForAuthByEmail(string email)
     {
-        var user = await _userRepository.GetByEmailAsync(email);
+        var user = await _userRepository.GetUserEntityByEmailAsync(email);
         if (user == null) throw new NotFoundException("User with this email not found");
 
         return new UserInternalAuthDto
@@ -65,32 +57,9 @@ public class UserService : IUserService
         return MapToDto(newUser);
     }
 
-    public async Task<UserDto> UpdateUserRoleAsync(string id, Role role)
-    {
-        var user = await _userRepository.GetByIdAsync(id);
-        if (user == null) throw new NotFoundException($"User with id {id} not found");
-
-        await _userRepository.UpdateRoleAsync(id, role);
-
-        return MapToDto(user);
-    }
-
-    public async Task<UserDto> UpdateUserStatusAsync(string id, bool isVerified)
-    {
-        var user = await _userRepository.GetByIdAsync(id);
-        if (user == null) throw new NotFoundException($"User with id {id} not found");
-        await _userRepository.UpdateVerificationStatusAsync(user.Id, isVerified);
-        return MapToDto(user);
-    }
-
-    public async Task DeleteUserAsync(string id)
-    {
-        await _userRepository.DeleteUserAsync(id);
-    }
-
     public async Task<bool> MarkEmailAsVerifiedAsync(string email)
     {
-        var user = await _userRepository.GetByEmailAsync(email);
+        var user = await _userRepository.GetUserEntityByEmailAsync(email);
         if (user == null) return false;
 
         user.IsVerified = true;
@@ -100,21 +69,53 @@ public class UserService : IUserService
 
     public async Task<bool> UpdateUserPasswordAsync(string email, string newPassword)
     {
-        var user = await _userRepository.GetByEmailAsync(email);
+        var user = await _userRepository.GetUserEntityByEmailAsync(email);
         if (user == null) return false;
         user.PasswordHash = newPassword;
         await _userRepository.SaveChangesAsync();
         return true;
     }
 
+    public async Task<UserDto> UpdateUserStatusAsync(Guid id, bool isVerified)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null) throw new NotFoundException($"User with id {id} not found");
+        await _userRepository.UpdateVerificationStatusAsync(user.Id, isVerified);
+        return MapToDto(user);
+    }
+
+    public async Task<UserDto> GetUserById(Guid id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null) throw new NotFoundException($"User with id {id} not found");
+
+        return MapToDto(user);
+    }
+
+    public async Task<UserDto> UpdateUserRoleAsync(Guid id, Role role)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null) throw new NotFoundException($"User with id {id} not found");
+
+        await _userRepository.UpdateRoleAsync(id, role);
+
+        return MapToDto(user);
+    }
+
+    public async Task DeleteUserAsync(Guid id)
+    {
+        await _userRepository.DeleteUserAsync(id);
+    }
+
     private static UserDto MapToDto(User user)
     {
         return new UserDto
         {
-            Id = user.Id,
+            Id = user.Id.ToString(),
             Email = user.Email,
             Role = user.Role.ToString(),
-            IsVerified = user.IsVerified
+            IsVerified = user.IsVerified,
+            ProfileId = user.Profile?.Id.ToString() ?? ""
         };
     }
 }

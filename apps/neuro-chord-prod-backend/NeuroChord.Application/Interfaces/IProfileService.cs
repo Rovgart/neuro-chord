@@ -5,11 +5,11 @@ namespace NeuroChord.Application.Interfaces;
 
 public interface IProfileService
 {
-    Task<ProfileResponseDto> GetByUserIdAsync(string userId);
-    Task<bool> UpdateProfileAsync(string userId, UpdateProfileDto dto);
+    Task<ProfileResponseDto> GetByUserIdAsync(Guid userId);
+    Task<bool> UpdateProfileAsync(Guid userId, UpdateProfileDto dto);
 
-    Task<bool> CreateProfileAsync(string userId, CreateProfileDto dto);
+    Task<bool> CreateProfileAsync(Guid userId, CreateProfileDto dto);
 
-    Task<string> UploadAvatarAsync(string userId, Stream file, string fileName);
-    Task<bool> DeleteProfileAsync(string userId);
+    Task<string> UploadAvatarAsync(Guid userId, Stream file, string fileName);
+    Task<bool> DeleteProfileAsync(Guid userId);
 }

@@ -4,5 +4,6 @@ public record AccessTokenPayload(
     string UserId,
     string Email,
     string Role,
-    string SessionId
+    string SessionId,
+    string ProfileId
 );

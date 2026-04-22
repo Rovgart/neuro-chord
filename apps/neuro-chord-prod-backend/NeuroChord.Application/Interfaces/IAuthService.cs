@@ -13,7 +13,7 @@ public interface IAuthService
     Task<bool> VerifyEmailAsync(string token, string ipAddress, string userAgent);
     Task<string> InitResetPasswordAsync(string email);
 
-    Task LogoutAsync(string userId);
+    Task LogoutAsync(Guid userId);
 
     Task<bool> VerifyPinAsync(string token, string pin, string email);
 

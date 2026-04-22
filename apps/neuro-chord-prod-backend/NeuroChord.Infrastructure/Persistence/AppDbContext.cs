@@ -5,7 +5,10 @@ namespace NeuroChord.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
+
     public DbSet<User> Users { get; set; }
     public DbSet<TeacherProfile> TeacherProfiles { get; set; }
     public DbSet<Profile> Profiles { get; set; }
@@ -14,7 +17,12 @@ public class AppDbContext : DbContext
     public DbSet<PasswordReset> PasswordResets { get; set; }
     public DbSet<Session> Sessions { get; set; }
     public DbSet<SessionArchive> SessionArchives { get; set; }
+    public DbSet<Material> Materials { get; set; }
+    public DbSet<SharedResources> SharedResources { get; set; }
+    public DbSet<Folder> Folders { get; set; }
     public DbSet<Campaign> Campaigns { get; set; }
+    public DbSet<TeacherInstrument> TeacherInstruments { get; set; }
+    public DbSet<Instrument> Instruments { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -42,6 +50,18 @@ public class AppDbContext : DbContext
             .WithMany(u => u.Verifications)
             .HasForeignKey(v => v.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<TeacherInstrument>()
+            .HasKey(ti => new { ti.TeacherId, ti.InstrumentId });
+        modelBuilder.Entity<TeacherInstrument>()
+            .HasOne(ti => ti.TeacherProfile)
+            .WithMany(tp => tp.TeacherInstruments)
+            .HasForeignKey(ti => ti.TeacherId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<TeacherInstrument>()
+            .HasOne(ti => ti.Instrument)
+            .WithMany(i => i.TeacherInstruments)
+            .HasForeignKey(ti => ti.InstrumentId)
+            .OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Session>()
             .HasOne<User>(s => s.User)
             .WithMany(s => s.Sessions)
@@ -57,5 +77,25 @@ public class AppDbContext : DbContext
             .WithMany(u => u.PasswordResets)
             .HasForeignKey(v => v.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Material>()
+            .HasOne<User>(m => m.Owner)
+            .WithMany(u => u.Materials)
+            .HasForeignKey(m => m.OwnerId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SharedResources>()
+            .HasOne<Material>(s => s.Material)
+            .WithMany()
+            .HasForeignKey(s => s.MaterialId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SharedResources>()
+            .HasOne<Folder>(s => s.Folder)
+            .WithMany()
+            .HasForeignKey(s => s.FolderId)
+            .OnDelete(DeleteBehavior.NoAction);
+        modelBuilder.Entity<Material>()
+            .HasOne<Folder>(s => s.Folder)
+            .WithMany(f => f.Materials)
+            .HasForeignKey(m => m.FolderId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

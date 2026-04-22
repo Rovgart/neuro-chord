@@ -7,6 +7,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using NeuroChord.Application.DTOs;
 using NeuroChord.Application.Exceptions;
 using NeuroChord.Application.Interfaces;
+using NeuroChordDomain.Enums;
 
 namespace NeuroChord.Application.Services;
 
@@ -54,7 +55,13 @@ public class AuthService : IAuthService
             await _sessionService.ArchiveRevokedSessionsAsync(userInternal.Id);
             var session = await _sessionService.CreateSessionAsync(userInternal.Id, ipAddress, userAgent);
 
-            var payload = new AccessTokenPayload(userInternal.Id, userInternal.Email, userInternal.Role, session.Id);
+            var payload = new AccessTokenPayload(
+                userInternal.Id.ToString(),
+                userInternal.Email,
+                userInternal.Role,
+                session.Id.ToString(),
+                userInternal.ProfileId?.ToString() ?? ""
+            );
             var accessToken = _jwtService.GenerateAccessToken(payload);
             var refreshToken = _jwtService.GenerateRefreshToken();
 
@@ -65,10 +72,11 @@ public class AuthService : IAuthService
 
             var userPublic = new UserDto
             {
-                Id = userInternal.Id,
+                Id = userInternal.Id.ToString(),
                 Email = userInternal.Email,
                 Role = userInternal.Role,
-                IsVerified = userInternal.IsVerified
+                IsVerified = userInternal.IsVerified,
+                ProfileId = userInternal.ProfileId.ToString() ?? ""
             };
 
             return new AuthResponseDto(accessToken, refreshToken, userPublic);
@@ -170,7 +178,62 @@ public class AuthService : IAuthService
         await _cache.RemoveAsync($"reset-password:{email}");
     }
 
-    public async Task LogoutAsync(string userId)
+    public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken, string accessToken)
+    {
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            // Check if session exists and if expires
+            var session = await _sessionService.GetSessionByTokenAsync(refreshToken);
+            if (session == null || !await _sessionService.IsSessionValidAsync(refreshToken))
+                throw new UnauthorizedAccessException("Session expired or invalid");
+            // Verify accessToken and refreshToken
+            var principal = await _jwtService.VerifyAccessToken(accessToken);
+            var userId = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                         ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var user = await _userService.GetUserById(Guid.Parse(userId));
+            if (user == null) throw new UnauthorizedAccessException("User not found");
+            foreach (var claim in principal.Claims) Console.WriteLine($"CLAIM DEBUG: {claim.Type} = {claim.Value}");
+            var updatedPayload = new AccessTokenPayload(
+                user.Id,
+                user.Email,
+                user.Role,
+                principal.FindFirst(JwtRegisteredClaimNames.Sid)?.Value ?? principal.FindFirst(ClaimTypes.Sid)?.Value,
+                user.ProfileId
+            );
+            if (string.IsNullOrEmpty(updatedPayload.UserId) || string.IsNullOrEmpty(updatedPayload.SessionId))
+                throw new UnauthorizedAccessException("Incomplete token claims.");
+            // Generate new pair of accessToken and refreshToken
+            var newAccessToken = _jwtService.GenerateAccessToken(updatedPayload);
+            var newRefreshToken = _jwtService.GenerateRefreshToken();
+            // Blacklist old refresh token
+
+            var cacheOptions = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
+            };
+            await _cache.SetStringAsync($"blacklist:{refreshToken}", session.RefreshToken, cacheOptions);
+
+            session.RefreshToken = newRefreshToken;
+            session.UpdatedAt = DateTime.UtcNow;
+
+
+            await _unitOfWork.CommitAsync();
+
+            return new AuthResponseDto(
+                newAccessToken,
+                newRefreshToken,
+                new UserDto { Id = user.Id, Email = user.Email, Role = user.Role, IsVerified = user.IsVerified }
+            );
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task LogoutAsync(Guid userId)
     {
         await _unitOfWork.BeginTransactionAsync();
         try
@@ -185,50 +248,13 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken, string accessToken)
+    public async Task LogoutCurrentDeviceAsync(Guid sessionId, Reason reason)
     {
         await _unitOfWork.BeginTransactionAsync();
         try
         {
-            // Check if session exists and if expires
-            var session = await _sessionService.GetSessionByTokenAsync(refreshToken);
-            if (session == null || !await _sessionService.IsSessionValidAsync(refreshToken))
-                throw new UnauthorizedAccessException("Session expired or invalid");
-            // Verify accessToken and refreshToken
-            var principal = await _jwtService.VerifyAccessToken(accessToken);
-            var payload = new AccessTokenPayload(
-                principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, // Próba obu
-                principal.FindFirst(ClaimTypes.Email)?.Value
-                ?? principal.FindFirst(JwtRegisteredClaimNames.Email)?.Value,
-                principal.FindFirst(ClaimTypes.Role)?.Value,
-                principal.FindFirst(ClaimTypes.Sid)?.Value
-            );
-            if (string.IsNullOrEmpty(payload.UserId) || string.IsNullOrEmpty(payload.SessionId))
-                throw new UnauthorizedAccessException("Incomplete token claims.");
-            // Generate new pair of accessToken and refreshToken
-            var newAccessToken = _jwtService.GenerateAccessToken(payload);
-            var newRefreshToken = _jwtService.GenerateRefreshToken();
-            // Blacklist old refresh token
-
-            var cacheOptions = new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
-            };
-            await _cache.SetStringAsync($"blacklist:{refreshToken}", session.RefreshToken, cacheOptions);
-
-            // Update session with new refreshToken
-            session.RefreshToken = newRefreshToken;
-            session.UpdatedAt = DateTime.UtcNow;
-
-
+            await _sessionService.RevokeSessionAsync(sessionId, reason);
             await _unitOfWork.CommitAsync();
-
-            return new AuthResponseDto(
-                newAccessToken,
-                newRefreshToken,
-                new UserDto { Id = payload.UserId, Email = payload.Email, Role = payload.Role }
-            );
         }
         catch
         {
