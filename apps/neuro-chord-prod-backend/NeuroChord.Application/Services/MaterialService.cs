@@ -56,7 +56,7 @@ public class MaterialService(
         return await materialRepository.DeleteAllUserMaterials(userId);
     }
 
-    public async Task<MaterialResponseDto> UpdateMaterialAsync(Guid materialId, UpdateMaterialDTO dto, Guid userId)
+    public async Task<MaterialResponseDto> UpdateMaterialAsync(Guid materialId, UpdateMaterialDto dto, Guid userId)
     {
         var material = await materialRepository.GetMaterial(materialId);
 
