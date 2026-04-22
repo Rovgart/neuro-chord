@@ -1,8 +1,5 @@
 namespace NeuroChord.Application.Exceptions;
 
-public class ConflictException : Exception
+public class ConflictException(string message) : Exception
 {
-    public ConflictException(string message) : base(message)
-    {
-    }
 }

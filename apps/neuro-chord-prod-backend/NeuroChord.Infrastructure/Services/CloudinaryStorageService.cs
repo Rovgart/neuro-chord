@@ -1,5 +1,6 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
+using NeuroChord.Application.Exceptions;
 using NeuroChord.Application.Interfaces;
 
 namespace NeuroChord.Infrastructure.Services;
@@ -26,6 +27,23 @@ public class CloudinaryStorageService : IFileStorageService
             Folder = "neurochord_profile_pics"
         };
         var result = await _cloudinary.UploadAsync(uploadsParams);
+        return result.SecureUrl.ToString();
+    }
+
+    public async Task<string> UploadVideoAsync(Stream fileStream, string fileName)
+    {
+        var uploadParams = new VideoUploadParams
+        {
+            File = new FileDescription(fileName, fileStream),
+            Folder = "neurochord_materials/videos",
+            EagerTransforms = new List<Transformation>
+            {
+                new Transformation().Width(1280).Height(720).Crop("liimt").Quality("auto").FetchFormat("auto")
+            },
+            EagerAsync = true
+        };
+        var result = await _cloudinary.UploadAsync(uploadParams);
+        if (result.Error != null) throw new ConflictException(result.Error.Message);
         return result.SecureUrl.ToString();
     }
 }

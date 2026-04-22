@@ -50,6 +50,10 @@ public class ExceptionMiddleware
                 (int)HttpStatusCode.NotFound,
                 exception.Message
             ),
+            ForbiddenException => (
+                (int)HttpStatusCode.Forbidden,
+                "You are not authorized to perform this action"
+            ),
             ConflictException => (
                 (int)HttpStatusCode.Conflict,
                 exception.Message
