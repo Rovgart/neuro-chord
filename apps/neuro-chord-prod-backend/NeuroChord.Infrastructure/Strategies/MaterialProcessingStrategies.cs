@@ -12,6 +12,8 @@ public class VideoMaterialStrategy(IFileStorageService fileStorageService) : IMa
 
     public async Task ProcessAsync(Material material, CreateMaterialDto dto)
     {
+        if (dto.File == null || dto.File.Length == 0) throw new BadHttpRequestException("Video file is required.");
+
         using var stream = dto.File.OpenReadStream();
         if (dto.File == null || dto.File.Length == 0) throw new BadHttpRequestException("Video file is required");
         var uploadResult = await fileStorageService.UploadVideoAsync(stream, dto.File.FileName);

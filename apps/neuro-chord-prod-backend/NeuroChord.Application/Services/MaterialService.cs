@@ -1,22 +1,18 @@
+using Microsoft.Extensions.Caching.Distributed;
 using NeuroChord.Application.DTOs.Materials;
 using NeuroChord.Application.Exceptions;
 using NeuroChord.Application.Interfaces;
 using NeuroChordDomain.Entities;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace NeuroChord.Application.Services;
 
 public class MaterialService(
     IUnitOfWork unitOfWork,
     IEnumerable<IMaterialProcessingStrategy> strategies,
+    IDistributedCache cache,
     IMaterialRepository materialRepository) : IMaterialService
 {
-    public async Task<MaterialResponseDto> GetMaterialByIdAsync(Guid id)
-    {
-        var material = await materialRepository.GetMaterial(id);
-        if (material == null) throw new NotFoundException($"Material with id {id} not found.");
-        return MapToResponseDto(material);
-    }
-
     public async Task<MaterialResponseDto> CreateMaterialAsync(CreateMaterialDto dto, Guid userId)
     {
         var newMaterial = new Material
@@ -38,13 +34,6 @@ public class MaterialService(
         return MapToResponseDto(newMaterial);
     }
 
-
-    public async Task<IEnumerable<MaterialResponseDto>> GetUserMaterialsAsync(Guid userId)
-    {
-        var userMaterials = await materialRepository.GetAllUserMaterials(userId);
-        return userMaterials.Select(MapToResponseDto).ToList();
-    }
-
     public async Task<bool> DeleteMaterialAsync(Guid materialId, Guid userId)
     {
         var deletedMaterial = await materialRepository.DeleteUserMaterial(userId, materialId);
@@ -58,7 +47,7 @@ public class MaterialService(
 
     public async Task<MaterialResponseDto> UpdateMaterialAsync(Guid materialId, UpdateMaterialDto dto, Guid userId)
     {
-        var material = await materialRepository.GetMaterial(materialId);
+        var material = await materialRepository.GetMaterial(materialId, userId);
 
         if (material == null)
             throw new NotFoundException($"Material with ID {materialId} not found.");
@@ -79,6 +68,35 @@ public class MaterialService(
 
 
         return MapToResponseDto(material);
+    }
+
+    public async Task<MaterialResponseDto> GetMaterialByIdAsync(Guid id, Guid currentUserId)
+    {
+        var cacheKey = $"material_{id}";
+
+        var cachedMaterial = await cache.GetStringAsync(cacheKey);
+        if (!string.IsNullOrEmpty(cachedMaterial))
+            return JsonSerializer.Deserialize<MaterialResponseDto>(cachedMaterial) ??
+                   throw new NotFoundException($"Material with ID {id} not found.");
+
+        var material = await materialRepository.GetMaterial(id, currentUserId);
+
+        if (material == null) throw new NotFoundException($"Material with ID {id} not found.");
+
+        var response = MapToResponseDto(material);
+        var cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+        };
+        await cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(response), cacheOptions);
+        return response;
+    }
+
+
+    public async Task<IEnumerable<MaterialResponseDto>> GetUserMaterialsAsync(Guid? userId, Guid currentUserId)
+    {
+        var userMaterials = await materialRepository.GetAllUserMaterials(userId, currentUserId);
+        return userMaterials.Select(MapToResponseDto).ToList();
     }
 
     private static MaterialResponseDto MapToResponseDto(Material m)

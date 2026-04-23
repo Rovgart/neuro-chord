@@ -187,13 +187,11 @@ public class AuthService : IAuthService
             var session = await _sessionService.GetSessionByTokenAsync(refreshToken);
             if (session == null || !await _sessionService.IsSessionValidAsync(refreshToken))
                 throw new UnauthorizedAccessException("Session expired or invalid");
-            // Verify accessToken and refreshToken
             var principal = await _jwtService.VerifyAccessToken(accessToken);
             var userId = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                          ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var user = await _userService.GetUserById(Guid.Parse(userId));
             if (user == null) throw new UnauthorizedAccessException("User not found");
-            foreach (var claim in principal.Claims) Console.WriteLine($"CLAIM DEBUG: {claim.Type} = {claim.Value}");
             var updatedPayload = new AccessTokenPayload(
                 user.Id,
                 user.Email,

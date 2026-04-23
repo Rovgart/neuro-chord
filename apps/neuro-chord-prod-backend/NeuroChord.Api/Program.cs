@@ -1,5 +1,6 @@
 using System.Net.Mail;
 using System.Text;
+using System.Text.Json.Serialization;
 using CloudinaryDotNet;
 using DotNetEnv;
 using FluentValidation;
@@ -19,6 +20,7 @@ using NeuroChord.Application.Services;
 using NeuroChord.Infrastructure.Persistence;
 using NeuroChord.Infrastructure.Persistence.Repositories;
 using NeuroChord.Infrastructure.Services;
+using NeuroChord.Infrastructure.Strategies;
 using JwtRegisteredClaimNames = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames;
 
 Env.Load();
@@ -33,7 +35,7 @@ builder.Services.AddFluentEmail("noreply@neurochord.com", "Neuro Chord System")
     .AddSmtpSender(sender);
 builder.Services.AddControllers(options =>
     options.Filters.Add<ValidationFilter>()
-);
+).AddJsonOptions(options => { options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); });
 builder.Services.AddValidatorsFromAssemblyContaining<ResetPasswordValidator>();
 var cloudinarySection = builder.Configuration.GetSection("Cloudinary");
 var cloudinaryAccount = new Account(
@@ -136,6 +138,10 @@ builder.Services.AddScoped<ISecurityService, SecurityService>();
 builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IFileStorageService, CloudinaryStorageService>();
+builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
+builder.Services.AddScoped<IMaterialService, MaterialService>();
+builder.Services.AddScoped<IMaterialProcessingStrategy, PdfMaterialStrategy>();
+builder.Services.AddScoped<IMaterialProcessingStrategy, VideoMaterialStrategy>();
 
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));

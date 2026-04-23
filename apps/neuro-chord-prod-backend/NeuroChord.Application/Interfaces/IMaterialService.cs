@@ -4,8 +4,8 @@ namespace NeuroChord.Application.Interfaces;
 
 public interface IMaterialService
 {
-    Task<MaterialResponseDto> GetMaterialByIdAsync(Guid id);
-    Task<IEnumerable<MaterialResponseDto>> GetUserMaterialsAsync(Guid userId);
+    Task<MaterialResponseDto> GetMaterialByIdAsync(Guid id, Guid currentUserId);
+    Task<IEnumerable<MaterialResponseDto>> GetUserMaterialsAsync(Guid? userId, Guid currentUserId);
 
     Task<MaterialResponseDto> CreateMaterialAsync(CreateMaterialDto dto, Guid userId);
     Task<MaterialResponseDto> UpdateMaterialAsync(Guid materialId, UpdateMaterialDto dto, Guid userId);
