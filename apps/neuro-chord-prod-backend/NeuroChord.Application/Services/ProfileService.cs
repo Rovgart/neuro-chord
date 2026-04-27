@@ -49,7 +49,7 @@ public class ProfileService : IProfileService
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null || user.OnboardingComplete) return false;
 
-        if (!Enum.TryParse<Role>(dto.Role, out var assignedRole)) return false;
+        if (!Enum.TryParse<Role>(dto.Role.ToString(), out var assignedRole)) return false;
 
 
         var newProfile = new Profile
@@ -61,19 +61,24 @@ public class ProfileService : IProfileService
             CreatedAt = DateTime.UtcNow
         };
         if (assignedRole == Role.Student)
+        {
             newProfile.StudentProfile = new StudentProfile
             {
                 Username = dto.Username ?? user.Email.Split('@')[0],
                 ExperienceLevel = 1
             };
+            user.Role = Role.Student;
+        }
         else if (assignedRole == Role.Teacher)
+        {
             newProfile.TeacherProfile = new TeacherProfile
             {
                 Specialization = dto.Specialization ?? "General",
                 CreatedAt = DateTime.UtcNow
             };
+            user.Role = Role.TeacherPending;
+        }
 
-        user.Role = assignedRole;
         user.OnboardingComplete = true;
         user.RegistrationStep = RegistrationStep.Onboarded;
 

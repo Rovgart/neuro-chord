@@ -4,15 +4,15 @@ namespace NeuroChordDomain.Entities;
 
 public class SharedResources
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public Guid? MaterialId { get; set; }
-    public Guid? TargetId { get; set; }
-    public TargetType TargetType { get; set; }
-    public Guid? QuizId { get; set; }
-    public Guid? FolderId { get; set; }
-    public Material Material { get; set; }
-    public Folder Folder { get; set; }
-    public string AccessLevel { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid? MaterialId { get; init; }
+    public Guid? TargetId { get; init; }
+    public TargetType TargetType { get; init; }
+    public Guid? QuizId { get; init; }
+    public Guid? FolderId { get; init; }
+    public Material Material { get; init; }
+    public Folder Folder { get; init; }
+    public AccessLevel AccessLevel { get; init; } = AccessLevel.Viewer;
+    public DateTime CreatedAt { get; init; }
+    public DateTime UpdatedAt { get; init; }
 }

@@ -6,7 +6,7 @@ using NeuroChord.Infrastructure.Persistence;
 namespace NeuroChord.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/test")]
 public class Test : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -35,6 +35,31 @@ public class Test : ControllerBase
         catch (Exception ex)
         {
             return StatusCode(500, new { Status = "Crashed", Error = ex.Message });
+        }
+    }
+
+    [HttpGet("users")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        try
+        {
+            var users = await _context.Users
+                .Include(u => u.Profile)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Email,
+                    u.Role,
+                    DisplayName = u.Profile != null ? u.Profile.DisplayName : "No Profile",
+                    u.OnboardingComplete
+                })
+                .ToListAsync();
+
+            return Ok(users);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "Error fetching users", Details = ex.Message });
         }
     }
 }

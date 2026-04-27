@@ -4,33 +4,32 @@ using NeuroChord.Infrastructure.Persistence;
 
 namespace NeuroChord.Infrastructure.Services;
 
-public class UnitOfWork : IUnitOfWork
+public class UnitOfWork(
+    AppDbContext context,
+    IMaterialRepository materialRepository,
+    ISharedResourcesRepository sharedResourcesRepository) : IUnitOfWork
 {
-    private readonly AppDbContext _context;
     private IDbContextTransaction? _currentTransaction;
     private bool _disposed;
-
-    public UnitOfWork(AppDbContext context)
-    {
-        _context = context;
-    }
+    public IMaterialRepository Materials => materialRepository;
+    public ISharedResourcesRepository SharedResources => sharedResourcesRepository;
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.SaveChangesAsync(cancellationToken);
+        return await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task BeginTransactionAsync()
     {
         if (_currentTransaction != null) return;
-        _currentTransaction = await _context.Database.BeginTransactionAsync();
+        _currentTransaction = await context.Database.BeginTransactionAsync();
     }
 
     public async Task CommitAsync()
     {
         try
         {
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             if (_currentTransaction != null) await _currentTransaction.CommitAsync();
         }
         catch
@@ -52,7 +51,6 @@ public class UnitOfWork : IUnitOfWork
             DisposeTransaction();
         }
     }
-
 
     public void Dispose()
     {
@@ -78,7 +76,7 @@ public class UnitOfWork : IUnitOfWork
         if (disposing)
         {
             DisposeTransaction();
-            _context.Dispose();
+            context.Dispose();
         }
 
         _disposed = true;

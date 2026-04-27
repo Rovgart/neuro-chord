@@ -1,5 +1,6 @@
 using FluentValidation;
 using NeuroChord.Application.Dtos.Profile;
+using NeuroChordDomain.Enums;
 
 namespace NeuroChord.Api.Validators;
 
@@ -18,7 +19,7 @@ public class CreateProfileValidator : AbstractValidator<CreateProfileDto>
 
         RuleFor(x => x.Role)
             .NotEmpty().WithMessage("Role is required.")
-            .Must(role => role == "Student" || role == "Teacher")
+            .Must(role => role == Role.Student || role == Role.Teacher)
             .WithMessage("Role must be either 'Student' or 'Teacher'.");
 
         RuleFor(x => x.Username)

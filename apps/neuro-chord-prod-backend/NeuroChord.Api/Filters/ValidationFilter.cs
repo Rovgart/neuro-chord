@@ -7,7 +7,6 @@ public class ValidationFilter : IAsyncActionFilter
 {
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        // Sprawdzamy czy są błędy walidacji (które FluentValidation wrzuci do ModelState)
         if (!context.ModelState.IsValid)
         {
             var errors = context.ModelState

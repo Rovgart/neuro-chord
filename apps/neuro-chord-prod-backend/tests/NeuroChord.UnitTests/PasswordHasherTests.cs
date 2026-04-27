@@ -22,12 +22,10 @@ public class SecurityServiceTests
         var result = _sut.HashPassword(password);
 
         // Assert
-        // Sprawdzamy, czy mamy format Salt.Hash (oddzielone kropką)
         result.Should().Contain(".");
         var parts = result.Split('.');
         parts.Length.Should().Be(2);
 
-        // Sprawdzamy, czy to poprawne Base64
         Assert.NotNull(Convert.FromBase64String(parts[0]));
         Assert.NotNull(Convert.FromBase64String(parts[1]));
     }

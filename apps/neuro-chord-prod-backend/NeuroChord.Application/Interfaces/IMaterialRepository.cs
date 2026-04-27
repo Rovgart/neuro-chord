@@ -5,10 +5,12 @@ namespace NeuroChord.Application.Interfaces;
 public interface IMaterialRepository
 {
     Material AddMaterial(Material material);
-    Task<Material?> GetMaterial(Guid id, Guid currentUserId);
-    Task<List<Material>> GetAllUserMaterials(Guid? userId, Guid currentUserId);
+    Task<Material?> GetByIdAsync(Guid id);
     Material UpdateMaterial(Material material);
 
-    Task<bool> DeleteUserMaterial(Guid userId, Guid materialId);
     Task<bool> DeleteAllUserMaterials(Guid userId);
+    public Task<List<Material>> GetUsersMaterials(Guid userId);
+    public Task<Material?> GetByIdWithTrackingAsync(Guid id);
+
+    public void Remove(Material material);
 }

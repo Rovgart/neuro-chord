@@ -125,7 +125,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DevelopConnection")));
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<INeuroChordEmailService, EmailService>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
@@ -142,13 +141,13 @@ builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<IMaterialProcessingStrategy, PdfMaterialStrategy>();
 builder.Services.AddScoped<IMaterialProcessingStrategy, VideoMaterialStrategy>();
+builder.Services.AddScoped<ISharedResourcesRepository, SharedResourcesRepository>();
 
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 
 var app = builder.Build();
 
-// Pipeline HTTP
 app.UseMiddleware<ExceptionMiddleware>();
 if (app.Environment.IsDevelopment())
 {

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Distributed;
 using NeuroChord.Application.DTOs.Materials;
 using NeuroChord.Application.Exceptions;
@@ -8,7 +9,7 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 namespace NeuroChord.Application.Services;
 
 public class MaterialService(
-    IUnitOfWork unitOfWork,
+    IUnitOfWork uow,
     IEnumerable<IMaterialProcessingStrategy> strategies,
     IDistributedCache cache,
     IMaterialRepository materialRepository) : IMaterialService
@@ -24,30 +25,39 @@ public class MaterialService(
             OwnerId = userId,
             FolderId = dto.FolderId,
             RequiresSubscription = dto.RequiresSubscription,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
         var strategy = strategies.FirstOrDefault(s => s.type == dto.Type)
                        ?? throw new NotSupportedException($"Type {dto.Type} is not supported.");
         await strategy.ProcessAsync(newMaterial, dto);
         materialRepository.AddMaterial(newMaterial);
-        await unitOfWork.SaveChangesAsync();
+        await uow.SaveChangesAsync();
         return MapToResponseDto(newMaterial);
     }
 
-    public async Task<bool> DeleteMaterialAsync(Guid materialId, Guid userId)
+    public async Task DeleteMaterialAsync(Guid materialId, Guid userId)
     {
-        var deletedMaterial = await materialRepository.DeleteUserMaterial(userId, materialId);
-        return deletedMaterial;
+        var material = await uow.Materials.GetByIdWithTrackingAsync(materialId);
+        if (material == null) throw new NotFoundException("Material not found.");
+        if (material.OwnerId != userId)
+            throw new ForbiddenException("You don't have permission to delete this material.");
+
+        uow.Materials.Remove(material);
+        await uow.SaveChangesAsync();
+
+        var cacheKey = $"material_{materialId}";
+        await cache.RemoveAsync(cacheKey);
     }
 
     public async Task<bool> DeleteAllUserMaterialsAsync(Guid userId)
     {
-        return await materialRepository.DeleteAllUserMaterials(userId);
+        return await uow.Materials.DeleteAllUserMaterials(userId);
     }
 
     public async Task<MaterialResponseDto> UpdateMaterialAsync(Guid materialId, UpdateMaterialDto dto, Guid userId)
     {
-        var material = await materialRepository.GetMaterial(materialId, userId);
+        var material = await uow.Materials.GetByIdAsync(materialId);
 
         if (material == null)
             throw new NotFoundException($"Material with ID {materialId} not found.");
@@ -63,8 +73,8 @@ public class MaterialService(
         material.RequiresSubscription = dto.RequiresSubscription;
         material.UpdatedAt = DateTime.UtcNow;
 
-        materialRepository.UpdateMaterial(material);
-        await unitOfWork.SaveChangesAsync();
+        uow.Materials.UpdateMaterial(material);
+        await uow.SaveChangesAsync();
 
 
         return MapToResponseDto(material);
@@ -73,35 +83,96 @@ public class MaterialService(
     public async Task<MaterialResponseDto> GetMaterialByIdAsync(Guid id, Guid currentUserId)
     {
         var cacheKey = $"material_{id}";
+        MaterialResponseDto dto = null;
 
-        var cachedMaterial = await cache.GetStringAsync(cacheKey);
-        if (!string.IsNullOrEmpty(cachedMaterial))
-            return JsonSerializer.Deserialize<MaterialResponseDto>(cachedMaterial) ??
-                   throw new NotFoundException($"Material with ID {id} not found.");
-
-        var material = await materialRepository.GetMaterial(id, currentUserId);
-
-        if (material == null) throw new NotFoundException($"Material with ID {id} not found.");
-
-        var response = MapToResponseDto(material);
-        var cacheOptions = new DistributedCacheEntryOptions
+        var cachedData = await cache.GetStringAsync(cacheKey);
+        if (!string.IsNullOrEmpty(cachedData))
         {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
-        };
-        await cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(response), cacheOptions);
-        return response;
+            dto = JsonSerializer.Deserialize<MaterialResponseDto>(cachedData);
+        }
+        else
+        {
+            var material = await uow.Materials.GetByIdAsync(id);
+            if (material == null) throw new NotFoundException($"Material with ID {id} not found.");
+
+            dto = MapToResponseDto(material);
+
+            // Zapisujemy do cache, żeby następnym razem było szybciej
+            var cacheOptions = new DistributedCacheEntryOptions
+            { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10) };
+            await cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(dto), cacheOptions);
+        }
+
+        // 3. WSPÓLNA BRAMKA BEZPIECZEŃSTWA (Zawsze sprawdzana, nawet dla Cache!)
+        var isOwner = dto.OwnerId == currentUserId;
+        var isShared = await uow.SharedResources.IsMaterialSharedWithUser(id, currentUserId);
+
+        if (!isOwner && !isShared && !dto.IsPublic)
+            throw new ForbiddenException("You don't have permission to access this material");
+
+        return dto;
     }
 
-
-    public async Task<IEnumerable<MaterialResponseDto>> GetUserMaterialsAsync(Guid? userId, Guid currentUserId)
+    public async Task<IEnumerable<MaterialResponseDto>> GetSharedMaterialsWithMeAsync(Guid currentUserId)
     {
-        var userMaterials = await materialRepository.GetAllUserMaterials(userId, currentUserId);
+        var sharedResources = await uow.SharedResources.GetSharedWithMe(currentUserId);
+        if (sharedResources == null || !sharedResources.Any()) return Enumerable.Empty<MaterialResponseDto>();
+        return sharedResources.Select(sr => MapToResponseDto(sr.Material))
+            .ToList();
+    }
+
+    public async Task HandleSharingAsync(ShareMaterialDto dto, Guid currentUserId)
+    {
+        if (dto.MaterialId == Guid.Empty || dto.TargetId == Guid.Empty)
+            throw new BadHttpRequestException("You have to give material ID");
+
+        var material = await uow.Materials.GetByIdAsync(dto.MaterialId);
+        if (material == null) throw new NotFoundException("Material not found.");
+
+        var isOwner = material.OwnerId == currentUserId;
+        if (!isOwner) throw new ForbiddenException("You don't have permission to sharing this material.");
+
+        var isAlreadyShared =
+            await uow.SharedResources.IsMaterialSharedWithUser(dto.MaterialId, dto.TargetId);
+        if (isAlreadyShared) throw new ConflictException("You cannot share this material again.");
+
+        var isSharingToThemself = dto.TargetId == material.OwnerId;
+        if (isSharingToThemself) throw new ConflictException("You cannot share this material to yourself");
+        var shareRecord = new SharedResources
+        {
+            MaterialId = dto.MaterialId,
+            TargetId = dto.TargetId,
+            AccessLevel = dto.AccessLevel
+        };
+        uow.SharedResources.Add(shareRecord);
+
+        await uow.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<MaterialResponseDto>> GetUsersMaterialsAsync(Guid currentUserId)
+    {
+        var userMaterials = await uow.Materials.GetUsersMaterials(currentUserId);
+        if (userMaterials == null) return Enumerable.Empty<MaterialResponseDto>();
+
         return userMaterials.Select(MapToResponseDto).ToList();
+    }
+
+    public async Task<Material> GetMaterialForUserAsync(Guid materialId, Guid userId)
+    {
+        var material = await uow.Materials.GetByIdAsync(materialId);
+
+        if (material == null) throw new NotFoundException($"Material with ID {materialId} not found.");
+        var isOwner = material.OwnerId == userId;
+        var isPublic = material.IsPublic;
+        var isSharedWithMe = await uow.SharedResources.IsMaterialSharedWithUser(materialId, userId);
+        if (isOwner || isPublic || isSharedWithMe) return material;
+        throw new ForbiddenException("You don't have permission to retrieve this material.");
     }
 
     private static MaterialResponseDto MapToResponseDto(Material m)
     {
-        return new MaterialResponseDto(m.Id, m.Topic, m.Url, m.Type, m.IsPublic, m.FolderId, m.RequiresSubscription,
-            m.CreatedAt);
+        return new MaterialResponseDto(m.Id, m.Topic, m.Url, m.Type, m.OwnerId, m.IsPublic, m.FolderId,
+            m.RequiresSubscription,
+            m.CreatedAt, m.UpdatedAt);
     }
 }

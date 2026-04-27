@@ -7,8 +7,10 @@ public record MaterialResponseDto(
     string Topic,
     string Url,
     MaterialType Type,
+    Guid OwnerId,
     bool IsPublic,
     Guid? FolderId,
     bool RequiresSubscription,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    DateTime? UpdatedAt
 );
