@@ -7,6 +7,7 @@ namespace NeuroChord.Infrastructure.Services;
 public class UnitOfWork(
     AppDbContext context,
     IUserRepository userRepository,
+    ISubscriptionRepository subscriptionRepository,
     IMaterialRepository materialRepository,
     ITeacherApplicationRepository teacherApplicationRepository,
     ISharedResourcesRepository sharedResourcesRepository) : IUnitOfWork
@@ -14,6 +15,7 @@ public class UnitOfWork(
 {
     private IDbContextTransaction? _currentTransaction;
     private bool _disposed;
+    public ISubscriptionRepository Subscriptions => subscriptionRepository;
     public IMaterialRepository Materials => materialRepository;
     public ISharedResourcesRepository SharedResources => sharedResourcesRepository;
     public IUserRepository Users => userRepository;
