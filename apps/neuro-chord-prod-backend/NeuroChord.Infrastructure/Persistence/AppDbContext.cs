@@ -26,6 +26,7 @@ public class AppDbContext : DbContext
     public DbSet<Instrument> Instruments { get; set; }
     public DbSet<TeacherApplication> TeacherApplications { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<Subscriptions> Subscriptions { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

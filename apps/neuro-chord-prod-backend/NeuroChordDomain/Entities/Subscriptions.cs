@@ -9,6 +9,7 @@ public class Subscriptions
     public string StripeCustomerId { get; init; } = null!;
     public string? StripeSubscriptionId { get; init; }
     public string? PriceId { get; init; }
+    public string? LastInvoiceId { get; set; }
     public SubscriptionStatus Status { get; set; }
     public DateTime CurrentPeriodEnd { get; set; }
     public DateTime CreatedAt { get; init; }
