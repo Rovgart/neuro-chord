@@ -6,13 +6,19 @@ namespace NeuroChord.Infrastructure.Services;
 
 public class UnitOfWork(
     AppDbContext context,
+    IUserRepository userRepository,
     IMaterialRepository materialRepository,
+    ITeacherApplicationRepository teacherApplicationRepository,
     ISharedResourcesRepository sharedResourcesRepository) : IUnitOfWork
+
 {
     private IDbContextTransaction? _currentTransaction;
     private bool _disposed;
     public IMaterialRepository Materials => materialRepository;
     public ISharedResourcesRepository SharedResources => sharedResourcesRepository;
+    public IUserRepository Users => userRepository;
+
+    public ITeacherApplicationRepository TeacherApplications => teacherApplicationRepository;
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

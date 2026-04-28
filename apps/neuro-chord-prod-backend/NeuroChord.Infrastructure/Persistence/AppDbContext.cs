@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NeuroChordDomain.Entities;
 
 namespace NeuroChord.Infrastructure.Persistence;
@@ -23,28 +24,41 @@ public class AppDbContext : DbContext
     public DbSet<Campaign> Campaigns { get; set; }
     public DbSet<TeacherInstrument> TeacherInstruments { get; set; }
     public DbSet<Instrument> Instruments { get; set; }
+    public DbSet<TeacherApplication> TeacherApplications { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.Profile)
-            .WithOne(p => p.User)
-            .HasForeignKey<Profile>(p => p.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            foreach (var property in entityType.GetProperties())
+                if (property.ClrType.IsEnum)
+                {
+                    var converterType = typeof(EnumToStringConverter<>).MakeGenericType(property.ClrType);
+                    var converter = (ValueConverter)Activator.CreateInstance(converterType)!;
+                    property.SetValueConverter(converter);
+                }
+
         modelBuilder.Entity<User>()
             .HasOne<Campaign>(u => u.Campaign)
             .WithMany(c => c.Users)
             .HasForeignKey(u => u.CampaignId);
-        modelBuilder.Entity<Profile>()
-            .HasOne(p => p.StudentProfile)
-            .WithOne(s => s.Profile)
-            .HasForeignKey<StudentProfile>(s => s.ProfileId);
-        modelBuilder.Entity<Profile>()
-            .HasOne<TeacherProfile>(p => p.TeacherProfile)
-            .WithOne(s => s.Profile)
-            .HasForeignKey<TeacherProfile>(s => s.ProfileId);
+        modelBuilder.Entity<User>()
+            .HasOne<Profile>(u => u.Profile)
+            .WithOne(p => p.User)
+            .HasForeignKey<Profile>(p => p.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<User>()
+            .HasOne<TeacherProfile>(u => u.TeacherProfile)
+            .WithOne(tp => tp.User)
+            .HasForeignKey<TeacherProfile>(tp => tp.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<User>()
+            .HasOne<StudentProfile>(u => u.StudentProfile)
+            .WithOne(sp => sp.User)
+            .HasForeignKey<StudentProfile>(sp => sp.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Verification>()
             .HasOne<User>(v => v.User)
             .WithMany(u => u.Verifications)
@@ -97,5 +111,20 @@ public class AppDbContext : DbContext
             .WithMany(f => f.Materials)
             .HasForeignKey(m => m.FolderId)
             .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<TeacherApplication>()
+            .HasOne<User>(ta => ta.User)
+            .WithMany(u => u.TeacherApplications)
+            .HasForeignKey(ta => ta.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<AuditLog>()
+            .HasOne<User>(a => a.Actor)
+            .WithMany(u => u.PerformedActions)
+            .HasForeignKey(a => a.ActorId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<AuditLog>()
+            .HasOne<User>(a => a.Target)
+            .WithMany(u => u.ReceivedActions)
+            .HasForeignKey(a => a.TargetId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

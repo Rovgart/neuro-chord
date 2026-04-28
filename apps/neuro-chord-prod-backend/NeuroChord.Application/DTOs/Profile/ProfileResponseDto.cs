@@ -5,7 +5,7 @@ public record ProfileResponseDto(
     string DisplayName,
     string Description,
     string ImgUrl,
-    string Role, // Tu trafi np. nameof(Role.Teacher)
+    string Role,
     StudentProfileDto? StudentData,
     TeacherProfileDto? TeacherData,
     DateTime CreatedAt

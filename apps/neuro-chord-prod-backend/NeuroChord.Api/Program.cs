@@ -86,6 +86,13 @@ builder.Services.AddAuthentication(options =>
             NameClaimType = JwtRegisteredClaimNames.Sub
         };
     });
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("TeacherOnly", policy => policy.RequireRole("Teacher"));
+    options.AddPolicy("VerifiedUser", policy => policy.RequireClaim("is_verified", "true"));
+    options.AddPolicy("AtLeastStudent", policy => policy.RequireRole("Student", "Teacher", "Admin"));
+});
 var redisPassword = builder.Configuration["REDIS_PASSWORD"] ?? builder.Configuration["Redis:Password"];
 var redisConnection = $"127.0.0.1:6379,password={redisPassword}";
 builder.Services.AddHangfire(configuration => configuration
@@ -102,7 +109,7 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Wpisz: Bearer {twój_token}",
+        Description = "Type: Bearer {your_JWT}",
         Name = "Authorization",
         Type = SecuritySchemeType.ApiKey,
         BearerFormat = "JWT",
@@ -142,9 +149,11 @@ builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<IMaterialProcessingStrategy, PdfMaterialStrategy>();
 builder.Services.AddScoped<IMaterialProcessingStrategy, VideoMaterialStrategy>();
 builder.Services.AddScoped<ISharedResourcesRepository, SharedResourcesRepository>();
-
-
+builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<ITeacherApplicationRepository, TeacherApplicationRepository>();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 

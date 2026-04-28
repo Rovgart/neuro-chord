@@ -21,6 +21,12 @@ public class User
     public virtual ICollection<SessionArchive> SessionArchives { get; set; } = new List<SessionArchive>();
     public virtual ICollection<PasswordReset> PasswordResets { get; set; } = new List<PasswordReset>();
     public virtual ICollection<Material> Materials { get; set; } = new List<Material>();
+    public virtual ICollection<TeacherApplication> TeacherApplications { get; set; } = new List<TeacherApplication>();
+    public ICollection<AuditLog> PerformedActions { get; set; } = new List<AuditLog>();
+    public ICollection<AuditLog> ReceivedActions { get; set; } = new List<AuditLog>();
+
 
     public virtual Profile? Profile { get; set; }
+    public virtual TeacherProfile? TeacherProfile { get; set; }
+    public virtual StudentProfile? StudentProfile { get; set; }
 }

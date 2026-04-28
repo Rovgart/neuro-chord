@@ -8,7 +8,7 @@ namespace NeuroChord.Api.Controllers;
 
 [ApiController]
 [Route("api/materials")]
-[Authorize(Roles = "Student, Teacher")]
+[Authorize(Policy = "AtLeastStudent")]
 public class MaterialController(IMaterialService materialService) : ControllerBase
 {
     [HttpGet("owned")]
@@ -37,6 +37,7 @@ public class MaterialController(IMaterialService materialService) : ControllerBa
 
     [HttpPost]
     [Consumes("multipart/form-data")]
+    [Authorize(Policy = "Teacher")]
     public async Task<ActionResult<MaterialResponseDto>> CreateMaterialAsync([FromForm] CreateMaterialDto dto)
     {
         var userId = User.GetUserId();
@@ -46,6 +47,7 @@ public class MaterialController(IMaterialService materialService) : ControllerBa
     }
 
     [HttpPost("share")]
+    [Authorize(Policy = "Teacher")]
     public async Task<IActionResult> ShareMaterialAsync([FromBody] ShareMaterialDto dto)
     {
         var userId = User.GetUserId();
@@ -54,6 +56,7 @@ public class MaterialController(IMaterialService materialService) : ControllerBa
     }
 
     [HttpDelete("{materialId:guid}")]
+    [Authorize(Policy = "Teacher")]
     public async Task<IActionResult> DeleteMaterialAsync([FromRoute] Guid materialId)
     {
         var userId = User.GetUserId();

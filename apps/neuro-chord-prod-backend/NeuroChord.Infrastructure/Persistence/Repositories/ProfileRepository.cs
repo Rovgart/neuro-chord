@@ -17,17 +17,12 @@ public class ProfileRepository : IProfileRepository
     {
         return await _context.Profiles
             .Include(p => p.User)
-            .Include(p => p.StudentProfile)
-            .Include(p => p.TeacherProfile)
             .FirstOrDefaultAsync(p => p.UserId == userId);
     }
 
     public async Task<Profile?> GetByIdAsync(Guid id)
     {
-        return await _context.Profiles
-            .Include(p => p.StudentProfile)
-            .Include(p => p.TeacherProfile)
-            .FirstOrDefaultAsync(p => p.Id == id);
+        return await _context.Profiles.FirstOrDefaultAsync(p => p.UserId == id);
     }
 
     public void Update(Profile profile)

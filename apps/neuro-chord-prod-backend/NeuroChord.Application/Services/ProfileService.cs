@@ -11,34 +11,41 @@ public class ProfileService : IProfileService
 {
     private readonly IProfileRepository _profileRepository;
     private readonly IFileStorageService _storageService;
+    private readonly IUnitOfWork _uow;
     private readonly IUserRepository _userRepository;
 
     public ProfileService(IProfileRepository profileRepository, IUserRepository userRepository,
-        IFileStorageService storageService)
+        IFileStorageService storageService, IUnitOfWork unitOfWork)
     {
         _profileRepository = profileRepository;
         _userRepository = userRepository;
         _storageService = storageService;
+        _uow = unitOfWork;
     }
 
     public async Task<ProfileResponseDto> GetByUserIdAsync(Guid userId)
     {
+        // Przypominajka: Repozytorium musi dociągać Include(p => p.User).ThenInclude(...)
         var profile = await _profileRepository.GetByUserIdAsync(userId);
 
         if (profile == null) return null;
 
         return new ProfileResponseDto(
-            profile.Id.ToString(),
+            profile.UserId.ToString(), // Zmienione z Id na UserId
             profile.DisplayName,
             profile.Description,
             profile.ImgUrl,
             profile.User.Role.ToString(),
-            profile.StudentProfile != null
-                ? new StudentProfileDto(profile.StudentProfile.Username, profile.StudentProfile.ExperienceLevel)
+            profile.User.StudentProfile != null
+                ? new StudentProfileDto(
+                    profile.User.StudentProfile.Username,
+                    profile.User.StudentProfile.ExperienceLevel)
                 : null,
-            profile.TeacherProfile != null
-                ? new TeacherProfileDto(profile.TeacherProfile.Specialization, profile.TeacherProfile.Education,
-                    profile.TeacherProfile.CreatedAt)
+            profile.User.TeacherProfile != null
+                ? new TeacherProfileDto(
+                    profile.User.TeacherProfile.Specialization,
+                    profile.User.TeacherProfile.Education,
+                    profile.User.TeacherProfile.CreatedAt)
                 : null,
             profile.CreatedAt
         );
@@ -51,8 +58,7 @@ public class ProfileService : IProfileService
 
         if (!Enum.TryParse<Role>(dto.Role.ToString(), out var assignedRole)) return false;
 
-
-        var newProfile = new Profile
+        user.Profile = new Profile
         {
             UserId = userId,
             DisplayName = dto.DisplayName,
@@ -60,10 +66,12 @@ public class ProfileService : IProfileService
             ImgUrl = dto.ImgUrl ?? string.Empty,
             CreatedAt = DateTime.UtcNow
         };
+
         if (assignedRole == Role.Student)
         {
-            newProfile.StudentProfile = new StudentProfile
+            user.StudentProfile = new StudentProfile
             {
+                User = user,
                 Username = dto.Username ?? user.Email.Split('@')[0],
                 ExperienceLevel = 1
             };
@@ -71,19 +79,32 @@ public class ProfileService : IProfileService
         }
         else if (assignedRole == Role.Teacher)
         {
-            newProfile.TeacherProfile = new TeacherProfile
+            user.TeacherProfile = new TeacherProfile
             {
+                UserId = userId,
+                Specialization = dto.Specialization ?? "Pending",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            var teacherApplication = new TeacherApplication
+            {
+                UserId = userId,
                 Specialization = dto.Specialization ?? "General",
+                Bio = dto.Description,
+                Status = ApplicationStatus.Pending,
                 CreatedAt = DateTime.UtcNow
             };
+
+            await _uow.TeacherApplications.AddAsync(teacherApplication);
+
             user.Role = Role.TeacherPending;
         }
 
         user.OnboardingComplete = true;
         user.RegistrationStep = RegistrationStep.Onboarded;
 
-        await _profileRepository.CreateAsync(newProfile);
-        return await _profileRepository.SaveChangesAsync();
+
+        return await _uow.SaveChangesAsync() > 0;
     }
 
     public async Task<bool> UpdateProfileAsync(Guid userId, UpdateProfileDto dto)
@@ -91,17 +112,21 @@ public class ProfileService : IProfileService
         var profile = await _profileRepository.GetByUserIdAsync(userId);
         if (profile == null) return false;
 
-        if (dto.DisplayName != null) profile.DisplayName = dto.DisplayName;
-        if (dto.Description != null) profile.Description = dto.Description;
-        if (dto.ImgUrl != null) profile.ImgUrl = dto.ImgUrl;
+        profile.UpdateGeneralInfo(
+            dto.DisplayName,
+            dto.Description,
+            dto.ImgUrl
+        );
 
-        if (profile.TeacherProfile != null)
-        {
-            if (dto.Specialization != null) profile.TeacherProfile.Specialization = dto.Specialization;
-            if (dto.Education != null) profile.TeacherProfile.Education = dto.Education;
-        }
+        profile.User.TeacherProfile?.UpdateProfessionalInfo(
+            dto.Specialization,
+            dto.Education
+        );
 
-        profile.UpdatedAt = DateTime.UtcNow;
+        profile.User.StudentProfile?.UpdateProfile(
+            dto.Username
+        );
+
 
         _profileRepository.Update(profile);
         return await _profileRepository.SaveChangesAsync();

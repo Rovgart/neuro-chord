@@ -17,7 +17,11 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetByIdAsync(Guid id)
     {
-        return await _context.Users.FindAsync(id);
+        return await _context.Users
+            .Include(u => u.Profile)
+            .Include(u => u.StudentProfile)
+            .Include(u => u.TeacherProfile)
+            .FirstOrDefaultAsync(u => u.Id == id);
     }
 
     public async Task AddUserAsync(User user)
@@ -58,7 +62,7 @@ public class UserRepository : IUserRepository
                 PasswordHash = u.PasswordHash,
                 Role = u.Role.ToString(),
                 IsVerified = u.IsVerified,
-                ProfileId = u.Profile != null ? u.Profile.Id : null
+                ProfileId = u.Profile != null ? u.Id : null
             })
             .FirstOrDefaultAsync();
     }
@@ -66,5 +70,19 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetUserEntityByEmailAsync(string email)
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+    }
+
+    public async Task<List<User>> GetUsersByRoleAsync(Role role)
+    {
+        return await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Role == role)
+            .ToListAsync();
+    }
+
+    public Task ChangeRoleAsync(User user, Role role)
+    {
+        user.Role = role;
+        return Task.CompletedTask;
     }
 }

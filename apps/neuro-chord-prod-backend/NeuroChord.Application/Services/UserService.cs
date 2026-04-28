@@ -107,6 +107,7 @@ public class UserService : IUserService
         await _userRepository.DeleteUserAsync(id);
     }
 
+
     private static UserDto MapToDto(User user)
     {
         return new UserDto
@@ -115,7 +116,7 @@ public class UserService : IUserService
             Email = user.Email,
             Role = user.Role.ToString(),
             IsVerified = user.IsVerified,
-            ProfileId = user.Profile?.Id.ToString() ?? ""
+            ProfileId = user.Id.ToString() ?? ""
         };
     }
 }

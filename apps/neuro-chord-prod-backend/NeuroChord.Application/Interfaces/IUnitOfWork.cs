@@ -4,6 +4,10 @@ public interface IUnitOfWork : IDisposable
 {
     IMaterialRepository Materials { get; }
     ISharedResourcesRepository SharedResources { get; }
+
+    IUserRepository Users { get; }
+
+    ITeacherApplicationRepository TeacherApplications { get; }
     Task BeginTransactionAsync();
     Task CommitAsync();
     Task RollbackAsync();

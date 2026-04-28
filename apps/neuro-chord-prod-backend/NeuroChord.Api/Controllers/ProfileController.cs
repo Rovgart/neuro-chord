@@ -5,12 +5,12 @@ using NeuroChord.Api.Extensions;
 using NeuroChord.Application.Dtos.Profile;
 using NeuroChord.Application.DTOs.Profile;
 using NeuroChord.Application.Interfaces;
-using Role = NeuroChordDomain.Enums.Role;
 
 namespace NeuroChord.Api.Controllers;
 
 [ApiController]
 [Route("api/profile")]
+[Authorize(Policy = "AtLeastStudent")]
 public class ProfileController : ControllerBase
 {
     private readonly ILogger<ProfileController> _logger;
@@ -32,7 +32,6 @@ public class ProfileController : ControllerBase
         return Ok(profile);
     }
 
-    [Authorize(Roles = nameof(Role.Admin))]
     [HttpGet("{id}")]
     public async Task<ActionResult<ProfileResponseDto>> GetUserProfile(string id)
     {
@@ -42,7 +41,6 @@ public class ProfileController : ControllerBase
         return Ok(profile);
     }
 
-    [Authorize]
     [HttpPost("onboarding")]
     public async Task<IActionResult> CompleteOnboarding([FromBody] CreateProfileDto dto,
         [FromServices] IValidator<CreateProfileDto> validator)
@@ -66,7 +64,6 @@ public class ProfileController : ControllerBase
     }
 
 
-    [Authorize]
     [HttpPatch("avatar")]
     public async Task<IActionResult> UpdateAvatar(IFormFile file)
     {
