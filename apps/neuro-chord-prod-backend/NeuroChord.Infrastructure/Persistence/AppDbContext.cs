@@ -126,5 +126,10 @@ public class AppDbContext : DbContext
             .WithMany(u => u.ReceivedActions)
             .HasForeignKey(a => a.TargetId)
             .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Subscriptions>()
+            .HasOne<User>()
+            .WithOne()
+            .HasForeignKey<Subscriptions>(s => s.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
