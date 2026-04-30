@@ -27,6 +27,7 @@ public class AppDbContext : DbContext
     public DbSet<TeacherApplication> TeacherApplications { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<Subscriptions> Subscriptions { get; set; }
+    public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -132,5 +133,10 @@ public class AppDbContext : DbContext
             .WithOne()
             .HasForeignKey<Subscriptions>(s => s.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Subscriptions>()
+            .HasOne<SubscriptionPlan>(s => s.Plan)
+            .WithMany(sp => sp.Subscriptions)
+            .HasForeignKey(sp => sp.PlanId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

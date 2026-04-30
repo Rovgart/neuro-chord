@@ -21,7 +21,10 @@ using NeuroChord.Infrastructure.Persistence;
 using NeuroChord.Infrastructure.Persistence.Repositories;
 using NeuroChord.Infrastructure.Services;
 using NeuroChord.Infrastructure.Strategies;
+using Stripe;
+using Account = CloudinaryDotNet.Account;
 using JwtRegisteredClaimNames = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames;
+using SubscriptionService = NeuroChord.Infrastructure.Services.SubscriptionService;
 
 Env.Load();
 var sender = new SmtpClient("127.0.0.1")
@@ -29,6 +32,8 @@ var sender = new SmtpClient("127.0.0.1")
     Port = 1025
 };
 var builder = WebApplication.CreateBuilder(args);
+var stripeSecretKey = builder.Configuration["Secret_Key"];
+StripeConfiguration.ApiKey = stripeSecretKey;
 builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
 builder.Services.AddFluentEmail("noreply@neurochord.com", "Neuro Chord System")
     .AddRazorRenderer(typeof(EmailService))
@@ -153,6 +158,8 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<ITeacherApplicationRepository, TeacherApplicationRepository>();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();

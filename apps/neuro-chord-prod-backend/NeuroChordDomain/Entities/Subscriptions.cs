@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using NeuroChordDomain.Enums;
 
 namespace NeuroChordDomain.Entities;
@@ -10,6 +11,11 @@ public class Subscriptions
     public string? StripeSubscriptionId { get; init; }
     public string? PriceId { get; init; }
     public string? LastInvoiceId { get; set; }
+
+    [Required] public Guid PlanId { get; set; }
+
+    [ForeignKey("PlanId")] public SubscriptionPlan Plan { get; set; } = null!;
+
     public SubscriptionStatus Status { get; set; }
     public DateTime CurrentPeriodEnd { get; set; }
     public DateTime CreatedAt { get; init; }
