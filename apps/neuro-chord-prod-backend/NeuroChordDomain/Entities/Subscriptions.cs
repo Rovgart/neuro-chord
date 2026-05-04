@@ -8,10 +8,9 @@ public class Subscriptions
 {
     [Key] public Guid UserId { get; init; }
     public string StripeCustomerId { get; init; } = null!;
-    public string? StripeSubscriptionId { get; init; }
+    public string? StripeSubscriptionId { get; set; }
     public string? PriceId { get; init; }
     public string? LastInvoiceId { get; set; }
-
     [Required] public Guid PlanId { get; set; }
 
     [ForeignKey("PlanId")] public SubscriptionPlan Plan { get; set; } = null!;
@@ -20,4 +19,6 @@ public class Subscriptions
     public DateTime CurrentPeriodEnd { get; set; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; set; }
+
+    public virtual ICollection<IncomingWebhooks> IncomingWebhooks { get; set; }
 }

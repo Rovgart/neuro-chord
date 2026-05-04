@@ -11,6 +11,12 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
         return await context.Subscriptions.Where(s => s.UserId == userId).FirstOrDefaultAsync();
     }
 
+    public async Task<Subscriptions?> GetByStripeSubscriptionId(string stripeSubscriptionId)
+    {
+        return await context.Subscriptions.Where(s => s.StripeSubscriptionId == stripeSubscriptionId)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<Subscriptions?> GetByStripeCustomerId(string stripeCustomerId)
     {
         return await context.Subscriptions.AsNoTracking().Where(s => s.StripeCustomerId == stripeCustomerId)

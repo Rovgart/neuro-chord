@@ -6,7 +6,7 @@ namespace NeuroChord.Infrastructure.Services;
 
 public class BackgroundJobService : IBackgroundJobService
 {
-    public void Enqueue(Expression<Action> methodCall)
+    public void Enqueue<T>(Expression<Func<T, Task>> methodCall)
     {
         BackgroundJob.Enqueue(methodCall);
     }

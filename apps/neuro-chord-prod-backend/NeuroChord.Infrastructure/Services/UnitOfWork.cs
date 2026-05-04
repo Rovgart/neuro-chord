@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore.Storage;
 using NeuroChord.Application.Interfaces;
+using NeuroChord.Infrastructure.Interfaces;
 using NeuroChord.Infrastructure.Persistence;
 
 namespace NeuroChord.Infrastructure.Services;
@@ -9,12 +10,17 @@ public class UnitOfWork(
     IUserRepository userRepository,
     ISubscriptionRepository subscriptionRepository,
     IMaterialRepository materialRepository,
+    IAuditLogsRepository auditLogsRepository,
     ITeacherApplicationRepository teacherApplicationRepository,
+    IIncomingWebhooksRepository incomingWebhooksRepository,
     ISharedResourcesRepository sharedResourcesRepository) : IUnitOfWork
 
 {
     private IDbContextTransaction? _currentTransaction;
     private bool _disposed;
+    public IAuditLogsRepository AuditLogs => auditLogsRepository;
+
+    public IIncomingWebhooksRepository IncomingWebhooks => incomingWebhooksRepository;
     public ISubscriptionRepository Subscriptions => subscriptionRepository;
     public IMaterialRepository Materials => materialRepository;
     public ISharedResourcesRepository SharedResources => sharedResourcesRepository;

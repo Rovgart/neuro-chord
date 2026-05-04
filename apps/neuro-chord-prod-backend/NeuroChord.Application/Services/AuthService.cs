@@ -16,7 +16,6 @@ public class AuthService : IAuthService
     private readonly IBackgroundJobService _backgroundJobService;
     private readonly IDistributedCache _cache;
     private readonly IJwtService _jwtService;
-    private readonly INeuroChordEmailService _neuroChordEmailService;
     private readonly ISecurityService _securityService;
     private readonly ISessionService _sessionService;
     private readonly IUnitOfWork _unitOfWork;
@@ -37,7 +36,7 @@ public class AuthService : IAuthService
         _jwtService = jwtService;
         _unitOfWork = unitOfWork;
         _securityService = securityService;
-        _neuroChordEmailService = neuroChordEmailService;
+
         _backgroundJobService = backgroundJobService;
         _cache = cache;
     }
@@ -142,8 +141,8 @@ public class AuthService : IAuthService
             cacheOptions
         );
 
-        _backgroundJobService.Enqueue(() =>
-            _neuroChordEmailService.SendPasswordRecoveryPinAsync(email, pin));
+        _backgroundJobService.Enqueue<INeuroChordEmailService>(service =>
+            service.SendPasswordRecoveryPinAsync(email, pin));
 
         return resetToken;
     }
@@ -282,7 +281,8 @@ public class AuthService : IAuthService
         await _cache.SetStringAsync(token, email, cacheOptions);
 
         var activationLink = $"https://neurochord.com/verify?token={token}";
-        _backgroundJobService.Enqueue(() => _neuroChordEmailService.SendWelcomeEmailAsync(email, activationLink));
+        _backgroundJobService.Enqueue<INeuroChordEmailService>(service =>
+            service.SendWelcomeEmailAsync(email, activationLink));
     }
 
     public class ResetPasswordData

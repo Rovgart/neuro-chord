@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Options;
 using NeuroChord.Application.DTOs;
 using NeuroChord.Application.Interfaces;
+using NeuroChord.Infrastructure.Configuration;
 using NeuroChordDomain.Entities;
 using NeuroChordDomain.Enums;
 using Stripe;
@@ -7,8 +9,10 @@ using Stripe.Checkout;
 
 namespace NeuroChord.Infrastructure.Services;
 
-public class SubscriptionService(IUnitOfWork uow) : ISubscriptionService
+public class SubscriptionService(IUnitOfWork uow, IOptions<StripeSettings> stripeOptions) : ISubscriptionService
 {
+    private readonly StripeSettings _settings = stripeOptions.Value;
+
     public async Task<SubscriptionStatusDto> GetUserSubscriptionStatusAsync(Guid userId)
     {
         var sub = await uow.Subscriptions.GetByUserIdAsync(userId);
@@ -25,47 +29,53 @@ public class SubscriptionService(IUnitOfWork uow) : ISubscriptionService
         );
     }
 
-    public async Task<string> CreateSubscriptionSessionAsync(Guid userId, string priceId)
+    public async Task<string> CreateSubscriptionSessionAsync(Guid userId, string priceId, Guid planId)
     {
         var subscription = await uow.Subscriptions.GetByUserIdAsync(userId);
+
         if (subscription == null)
         {
             var customerService = new CustomerService();
             var customerOptions = new CustomerCreateOptions
             {
-                Metadata = new Dictionary<string, string>
-                {
-                    { "AppUserId", userId.ToString() }
-                }
+                Metadata = new Dictionary<string, string> { { "AppUserId", userId.ToString() } }
             };
             var stripeCustomer = await customerService.CreateAsync(customerOptions);
 
-            var newSubscription = new Subscriptions
+            subscription = new Subscriptions
             {
                 UserId = userId,
                 StripeCustomerId = stripeCustomer.Id,
                 Status = SubscriptionStatus.Incomplete,
-                CreatedAt = DateTime.UtcNow
+                PlanId = planId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
-            await uow.Subscriptions.AddAsync(newSubscription);
+            await uow.Subscriptions.AddAsync(subscription);
             await uow.CommitAsync();
         }
 
-        var sessionService = new SessionService();
         var sessionOptions = new SessionCreateOptions
         {
             Customer = subscription.StripeCustomerId,
             PaymentMethodTypes = new List<string> { "card" },
             LineItems = new List<SessionLineItemOptions>
             {
-                new()
-                {
-                    Price = priceId,
-                    Quantity = 1
-                }
+                new() { Price = priceId, Quantity = 1 }
             },
-            Mode = "subscription"
+            Mode = "subscription",
+            CancelUrl = _settings.CancelUrl,
+            SuccessUrl = _settings.SuccessUrl,
+
+            Metadata = new Dictionary<string, string>
+            {
+                { "UserId", userId.ToString() },
+                { "PlanId", planId.ToString() },
+                { "PriceId", priceId }
+            }
         };
+
+        var sessionService = new SessionService();
         var session = await sessionService.CreateAsync(sessionOptions);
         return session.Url;
     }
