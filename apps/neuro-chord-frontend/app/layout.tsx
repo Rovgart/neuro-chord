@@ -2,19 +2,14 @@ import Providers from '@/providers/providers';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
+  variable: '--font-sans',
+  weight: ['400', '500', '600', '700'],
 });
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
-
 export const metadata: Metadata = {
   title: 'NeuroChord',
   description: 'Your music trainee',
@@ -26,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}  antialiased`}>
+    <html lang="en" className={`${jakarta.variable} `}>
       <SpeedInsights />
       <Analytics />
       <body className="min-h-dvh flex flex-col">

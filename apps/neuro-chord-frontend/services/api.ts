@@ -5,12 +5,18 @@ import type { LoginResponseT, UserRegisterResponseT } from '@/types';
 import type { BaseQueryFn } from '@reduxjs/toolkit/query';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
+const getUserAgent = () => (typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown');
+
 const baseQuery = fetchBaseQuery({
-  baseUrl: 'http://localhost:3000',
+  baseUrl: 'http://localhost:3000/api',
   prepareHeaders: (headers, { getState }) => {
     const token = selectCurrentToken(getState() as RootState);
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    if (typeof window !== 'undefined') {
+      headers.set('UserAgent', window.navigator.userAgent);
     }
     return headers;
   },
@@ -42,7 +48,7 @@ export const neuroapi = createApi({
       query: (credentials) => ({
         url: 'auth/login/',
         method: 'POST',
-        body: credentials,
+        body: { ...credentials, userAgent: getUserAgent() },
       }),
     }),
     register: builder.mutation<UserRegisterResponseT, RegisterSchema>({

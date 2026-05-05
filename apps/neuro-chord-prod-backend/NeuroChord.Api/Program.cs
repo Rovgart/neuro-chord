@@ -108,6 +108,16 @@ builder.Services.AddHangfire(configuration => configuration
     .UseRecommendedSerializerSettings()
     .UseRedisStorage(redisConnection)
 );
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3001") // adres Twojego frontendu HeroUI/Next.js
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // ważne, jeśli będziesz przesyłać ciastka lub nagłówki Auth
+    });
+});
 builder.Services.AddHangfireServer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -190,7 +200,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHangfireDashboard();
 app.UseHttpsRedirection();
-
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 

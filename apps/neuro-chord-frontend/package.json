@@ -9,8 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@heroui/react": "^3.0.0-rc.1",
-    "@heroui/styles": "^3.0.0-rc.1",
+    "@heroui/react": "^3.0.3",
+    "@heroui/styles": "^3.0.3",
     "@hookform/resolvers": "^5.2.2",
     "@reduxjs/toolkit": "^2.11.2",
     "@vercel/analytics": "^2.0.1",

@@ -9,7 +9,6 @@ import { useForm } from 'react-hook-form';
 
 export default function RegisterForm() {
   const [trigger, { isLoading: isCheckingLoading }] = useLazyCheckEmailQuery();
-  // Wyciągamy isSuccess z mutacji signUp
   const [signUp, { isLoading, isSuccess }] = useRegisterMutation();
   const router = useRouter();
 
@@ -25,6 +24,7 @@ export default function RegisterForm() {
     mode: 'onBlur',
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const userEmail = watch('email');
 
   const onSubmit = async (data: RegisterSchema) => {
@@ -41,19 +41,19 @@ export default function RegisterForm() {
           <div className="p-4 rounded-full bg-success/10 text-success">
             <MailCheck size={48} />
           </div>
-          <h2 className="text-2xl font-bold text-foreground">Sprawdź skrzynkę!</h2>
+          <h2 className="text-2xl font-bold text-foreground">Check your email!</h2>
           <p className="text-sm text-foreground/60">
-            Wysłaliśmy link weryfikacyjny na adres: <br />
+            We have sent a verification link to your email <br />
             <span className="text-foreground font-semibold">{userEmail}</span>
           </p>
         </div>
 
         <div className="bg-default-100 p-4 rounded-xl text-xs text-foreground/50 italic">
-          Link jest ważny przez 24 godziny. Jeśli nie widzisz wiadomości, sprawdź folder SPAM.
+          The link is valid for 24 hours. If you do not receive the email, please check your SPAM folder.
         </div>
 
         <Button className="w-full font-bold h-12" onPress={() => router.push('/sign-in')}>
-          WRÓĆ DO LOGOWANIA
+          BACK TO LOGIN
         </Button>
       </div>
     );
@@ -115,19 +115,13 @@ export default function RegisterForm() {
           {isLoading ? 'Creating account...' : isCheckingLoading ? 'Checking email...' : 'SIGN UP'}
         </Button>
 
-        <div className="flex items-center gap-4 my-2">
-          <div className="h-px flex-1 bg-divider"></div>
-          <span className="text-[10px] uppercase tracking-widest text-foreground/30">AI Neural Link</span>
-          <div className="h-px flex-1 bg-divider"></div>
-        </div>
-
         <Button
           className="w-full font-semibold border-secondary/30 text-secondary hover:bg-secondary/10"
           variant="ghost"
           type="button"
           onPress={() => router.push('/sign-in')}
         >
-          Mam już konto
+          Already have an account
         </Button>
       </Form>
     </div>

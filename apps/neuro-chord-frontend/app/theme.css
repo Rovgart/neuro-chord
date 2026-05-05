@@ -1,0 +1,507 @@
+/* =========================================================
+   🎨 DESIGN TOKEN SYSTEM
+   Architecture: Primitive → Semantic → Component
+   Color space: OKLCH throughout
+   ========================================================= */
+
+/* =========================================================
+   LAYER 1 — PRIMITIVES
+   Raw palette. Never use these directly in components.
+   Only semantic tokens should reference these.
+   ========================================================= */
+:root {
+  /* --- Brand (violet) --- */
+  --brand-300: oklch(72% 0.16 280);
+  --brand-400: oklch(63% 0.16 280);
+  --brand-500: oklch(55% 0.16 280);
+  --brand-600: oklch(48% 0.16 280);
+  --brand-700: oklch(40% 0.16 280);
+
+  /* --- Teal (accent) --- */
+  --teal-300: oklch(78% 0.13 185);
+  --teal-400: oklch(70% 0.13 185);
+  --teal-500: oklch(62% 0.13 185);
+  --teal-600: oklch(55% 0.13 185);
+
+  /* --- Red (danger) --- */
+  --red-400: oklch(63% 0.2 25);
+  --red-500: oklch(55% 0.2 25);
+  --red-600: oklch(48% 0.2 25);
+
+  /* --- Gold (highlight / premium) --- */
+  --gold-300: oklch(86% 0.1 85);
+  --gold-400: oklch(78% 0.12 85);
+  --gold-500: oklch(70% 0.12 85);
+
+  /* --- Amber (creator / warm brand) --- */
+  --amber-400: oklch(72% 0.14 55);
+  --amber-500: oklch(65% 0.14 55);
+  --amber-600: oklch(58% 0.13 45);
+  --amber-700: oklch(50% 0.12 35);
+
+  /* --- Neutrals --- */
+  --neutral-0: oklch(100% 0 0);
+  --neutral-50: oklch(98% 0 0);
+  --neutral-100: oklch(96% 0 0);
+  --neutral-200: oklch(92% 0 0);
+  --neutral-300: oklch(88% 0 0);
+  --neutral-400: oklch(75% 0 0);
+  --neutral-500: oklch(62% 0 0);
+  --neutral-600: oklch(50% 0 0);
+  --neutral-700: oklch(38% 0 0);
+  --neutral-800: oklch(26% 0 0);
+  --neutral-900: oklch(16% 0 0);
+  --neutral-950: oklch(10% 0 0);
+
+  /* --- Dark surface scale (cool blue-grey tint) --- */
+  --dark-50: oklch(90% 0.005 255);
+  --dark-100: oklch(75% 0.01 255);
+  --dark-200: oklch(55% 0.012 255);
+  --dark-300: oklch(38% 0.015 255);
+  --dark-400: oklch(28% 0.018 255);
+  --dark-500: oklch(22% 0.018 255);
+  --dark-600: oklch(18% 0.015 255);
+  --dark-700: oklch(14% 0.012 255);
+  --dark-800: oklch(11% 0.01 255);
+
+  /* --- White / Black absolutes --- */
+  --white: oklch(100% 0 0);
+  --black: oklch(0% 0 0);
+}
+
+/* =========================================================
+   LAYER 2 — SEMANTIC TOKENS
+   What a color *means*, not what it looks like.
+   Override these in theme blocks.
+   ========================================================= */
+:root {
+  /* Core brand */
+  --color-primary: var(--brand-500);
+  --color-primary-hover: var(--brand-600);
+  --color-primary-active: var(--brand-700);
+  --color-primary-subtle: oklch(96% 0.025 280);
+  --color-on-primary: var(--white);
+
+  /* Accent */
+  --color-accent: var(--teal-500);
+  --color-accent-hover: var(--teal-600);
+  --color-on-accent: var(--white);
+
+  /* Danger */
+  --color-danger: var(--red-500);
+  --color-danger-hover: var(--red-600);
+  --color-danger-subtle: oklch(97% 0.02 25);
+  --color-on-danger: var(--white);
+
+  /* Highlight / premium */
+  --color-highlight: var(--gold-400);
+  --color-on-highlight: var(--neutral-900);
+
+  /* Backgrounds */
+  --color-bg: var(--neutral-0);
+  --color-surface: var(--neutral-50);
+  --color-surface-elevated: var(--neutral-100);
+  --color-surface-overlay: oklch(100% 0 0 / 0.85);
+
+  /* Text */
+  --color-text: var(--neutral-900);
+  --color-text-muted: var(--neutral-600);
+  --color-text-placeholder: var(--neutral-400);
+  --color-text-disabled: var(--neutral-400);
+  --color-text-inverse: var(--white);
+
+  /* Borders */
+  --color-border: var(--neutral-300);
+  --color-border-subtle: var(--neutral-200);
+  --color-border-strong: var(--neutral-400);
+  --color-border-focus: var(--brand-500);
+
+  /* Interactive states */
+  --color-hover-overlay: oklch(0% 0 0 / 0.04);
+  --color-active-overlay: oklch(0% 0 0 / 0.08);
+  --color-focus-ring: oklch(55% 0.16 280 / 0.35);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.05);
+  --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.08);
+  --shadow-lg: 0 8px 28px oklch(0% 0 0 / 0.12);
+  --shadow-xl: 0 16px 48px oklch(0% 0 0 / 0.14);
+}
+
+/* =========================================================
+   LAYER 3 — COMPONENT TOKENS
+   UI-specific bindings to semantic tokens.
+   ========================================================= */
+:root {
+  /* --- Button --- */
+  --button-bg: var(--color-primary);
+  --button-bg-hover: var(--color-primary-hover);
+  --button-bg-active: var(--color-primary-active);
+  --button-text: var(--color-on-primary);
+  --button-border: transparent;
+  --button-shadow: var(--shadow-sm);
+  --button-radius: var(--radius-md);
+
+  /* --- Button Ghost --- */
+  --button-ghost-bg: transparent;
+  --button-ghost-bg-hover: var(--color-primary-subtle);
+  --button-ghost-text: var(--color-primary);
+  --button-ghost-border: var(--color-border);
+
+  /* --- Button Danger --- */
+  --button-danger-bg: var(--color-danger);
+  --button-danger-bg-hover: var(--color-danger-hover);
+  --button-danger-text: var(--color-on-danger);
+
+  /* --- Card --- */
+  --card-bg: var(--color-surface);
+  --card-border: var(--color-border-subtle);
+  --card-radius: var(--radius-lg);
+  --card-shadow: var(--shadow-md);
+  --card-padding: var(--space-6);
+
+  /* --- Input --- */
+  --input-bg: var(--color-surface-elevated);
+  --input-border: var(--color-border);
+  --input-border-hover: var(--color-border-strong);
+  --input-border-focus: var(--color-border-focus);
+  --input-text: var(--color-text);
+  --input-placeholder: var(--color-text-placeholder);
+  --input-radius: var(--radius-md);
+  --input-shadow-focus: 0 0 0 3px var(--color-focus-ring);
+
+  /* --- Badge --- */
+  --badge-bg: var(--color-accent);
+  --badge-text: var(--color-on-accent);
+  --badge-radius: var(--radius-full);
+
+  /* --- Badge variants --- */
+  --badge-primary-bg: var(--color-primary-subtle);
+  --badge-primary-text: var(--color-primary);
+  --badge-danger-bg: var(--color-danger-subtle);
+  --badge-danger-text: var(--color-danger);
+
+  /* --- Avatar --- */
+  --avatar-bg: var(--color-primary-subtle);
+  --avatar-text: var(--color-primary);
+  --avatar-border: var(--color-surface);
+
+  /* --- Tooltip --- */
+  --tooltip-bg: var(--neutral-900);
+  --tooltip-text: var(--white);
+  --tooltip-radius: var(--radius-sm);
+
+  /* --- Navigation --- */
+  --nav-bg: var(--color-bg);
+  --nav-border: var(--color-border-subtle);
+  --nav-item-text: var(--color-text-muted);
+  --nav-item-text-active: var(--color-primary);
+  --nav-item-bg-active: var(--color-primary-subtle);
+
+  /* --- Modal / Overlay --- */
+  --modal-bg: var(--color-surface);
+  --modal-overlay: oklch(0% 0 0 / 0.4);
+  --modal-radius: var(--radius-xl);
+  --modal-shadow: var(--shadow-xl);
+
+  /* --- Table --- */
+  --table-header-bg: var(--color-surface);
+  --table-row-hover-bg: var(--color-surface-elevated);
+  --table-border: var(--color-border-subtle);
+}
+
+/* =========================================================
+   SPACING SCALE
+   ========================================================= */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+}
+
+/* =========================================================
+   RADIUS SCALE
+   ========================================================= */
+:root {
+  --radius-none: 0px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+}
+
+/* =========================================================
+   TYPOGRAPHY
+   ========================================================= */
+:root {
+  /* Families */
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* Size scale */
+  --text-2xs: 10px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+
+  /* Weight scale */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+
+  /* Line height */
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* Letter spacing */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-wider: 0.08em;
+  --tracking-widest: 0.16em;
+}
+
+/* =========================================================
+   TRANSITIONS
+   ========================================================= */
+:root {
+  --duration-instant: 80ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --duration-slower: 600ms;
+
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  --transition-fast: var(--duration-fast) var(--ease-default);
+  --transition-normal: var(--duration-normal) var(--ease-default);
+}
+
+/* =========================================================
+   Z-INDEX SCALE
+   ========================================================= */
+:root {
+  --z-below: -1;
+  --z-base: 0;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}
+
+/* =========================================================
+   🌙 DARK THEME
+   Overrides semantic tokens only.
+   Component tokens cascade automatically.
+   ========================================================= */
+[data-theme="dark"] {
+  /* Core brand — slightly lighter for contrast on dark bg */
+  --color-primary: var(--brand-400);
+  --color-primary-hover: var(--brand-500);
+  --color-primary-active: var(--brand-600);
+  --color-primary-subtle: oklch(22% 0.04 280);
+
+  /* Accent */
+  --color-accent: var(--teal-400);
+  --color-accent-hover: var(--teal-500);
+
+  /* Danger */
+  --color-danger: var(--red-400);
+  --color-danger-hover: var(--red-500);
+  --color-danger-subtle: oklch(18% 0.04 25);
+
+  /* Highlight */
+  --color-highlight: var(--gold-300);
+
+  /* Backgrounds */
+  --color-bg: var(--dark-700);
+  --color-surface: var(--dark-600);
+  --color-surface-elevated: var(--dark-500);
+  --color-surface-overlay: oklch(18% 0.015 255 / 0.9);
+
+  /* Text */
+  --color-text: var(--dark-50);
+  --color-text-muted: var(--dark-100);
+  --color-text-placeholder: var(--dark-200);
+  --color-text-disabled: var(--dark-300);
+
+  /* Borders */
+  --color-border: var(--dark-400);
+  --color-border-subtle: var(--dark-400);
+  --color-border-strong: var(--dark-300);
+
+  /* Shadows — darker base, more pronounced */
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.3);
+  --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.4);
+  --shadow-lg: 0 8px 28px oklch(0% 0 0 / 0.5);
+  --shadow-xl: 0 16px 48px oklch(0% 0 0 / 0.6);
+
+  /* Overlays */
+  --color-hover-overlay: oklch(100% 0 0 / 0.05);
+  --color-active-overlay: oklch(100% 0 0 / 0.1);
+  --color-focus-ring: oklch(63% 0.16 280 / 0.4);
+
+  /* Tooltip inverted in dark */
+  --tooltip-bg: var(--dark-50);
+  --tooltip-text: var(--neutral-900);
+
+  /* Modal overlay */
+  --modal-overlay: oklch(0% 0 0 / 0.65);
+}
+
+/* =========================================================
+   🧑‍🎨 CREATOR THEME  (warm amber — for teachers / authors)
+   Redefines primitives first, semantic layer cascades.
+   ========================================================= */
+[data-theme="creator"] {
+  /* Override primitives inside this scope */
+  --brand-400: var(--amber-400);
+  --brand-500: var(--amber-500);
+  --brand-600: var(--amber-600);
+  --brand-700: var(--amber-700);
+
+  /* Semantic overrides */
+  --color-primary: var(--brand-500);
+  --color-primary-hover: var(--brand-600);
+  --color-primary-active: var(--brand-700);
+  --color-primary-subtle: oklch(97% 0.025 55);
+
+  --color-accent: oklch(60% 0.1 200);
+  --color-accent-hover: oklch(54% 0.1 200);
+
+  --color-highlight: oklch(82% 0.06 85);
+
+  /* Warm off-white backgrounds */
+  --color-bg: oklch(98.5% 0.008 55);
+  --color-surface: oklch(96% 0.012 50);
+  --color-surface-elevated: oklch(93% 0.015 48);
+
+  /* Warm dark text */
+  --color-text: oklch(22% 0.025 40);
+  --color-text-muted: oklch(48% 0.02 40);
+  --color-text-placeholder: oklch(65% 0.015 45);
+
+  /* Warm borders */
+  --color-border: oklch(86% 0.018 50);
+  --color-border-subtle: oklch(91% 0.012 50);
+  --color-border-strong: oklch(78% 0.022 50);
+
+  /* Warm focus ring */
+  --color-focus-ring: oklch(65% 0.14 55 / 0.35);
+  --color-border-focus: var(--brand-500);
+}
+
+/* =========================================================
+   🧘 MINIMAL THEME  (focus / distraction-free mode)
+   Near-achromatic — everything pulled to neutral.
+   ========================================================= */
+[data-theme="minimal"] {
+  --color-primary: oklch(38% 0.04 255);
+  --color-primary-hover: oklch(30% 0.04 255);
+  --color-primary-active: oklch(22% 0.03 255);
+  --color-primary-subtle: oklch(96% 0.01 255);
+
+  --color-accent: oklch(52% 0.08 200);
+  --color-accent-hover: oklch(46% 0.08 200);
+
+  --color-highlight: oklch(72% 0.04 90);
+
+  /* Backgrounds — almost pure white */
+  --color-bg: oklch(99.5% 0 0);
+  --color-surface: oklch(97.5% 0 0);
+  --color-surface-elevated: oklch(95% 0 0);
+
+  /* Very dark text for contrast */
+  --color-text: oklch(12% 0 0);
+  --color-text-muted: oklch(50% 0 0);
+  --color-text-placeholder: oklch(70% 0 0);
+
+  /* Barely-there borders */
+  --color-border: oklch(91% 0 0);
+  --color-border-subtle: oklch(94% 0 0);
+  --color-border-strong: oklch(82% 0 0);
+
+  /* Subtle focus ring */
+  --color-focus-ring: oklch(38% 0.04 255 / 0.25);
+  --color-border-focus: var(--color-primary);
+
+  /* Flatter shadows */
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.03);
+  --shadow-md: 0 2px 8px oklch(0% 0 0 / 0.05);
+  --shadow-lg: 0 4px 16px oklch(0% 0 0 / 0.07);
+  --shadow-xl: 0 8px 32px oklch(0% 0 0 / 0.09);
+}
+
+/* =========================================================
+   USAGE REFERENCE
+   =========================================================
+
+   Primitive  →  never touch in component code
+   Semantic   →  use in design decisions ("what color is X for")
+   Component  →  use in component CSS ("style this input")
+
+   Example:
+     .btn-primary {
+       background-color: var(--button-bg);
+       color: var(--button-text);
+       border-radius: var(--button-radius);
+       box-shadow: var(--button-shadow);
+       transition: background-color var(--transition-fast);
+     }
+     .btn-primary:hover {
+       background-color: var(--button-bg-hover);
+     }
+
+     .card {
+       background: var(--card-bg);
+       border: 1px solid var(--card-border);
+       border-radius: var(--card-radius);
+       padding: var(--card-padding);
+       box-shadow: var(--card-shadow);
+     }
+
+     .input {
+       background: var(--input-bg);
+       border: 1px solid var(--input-border);
+       color: var(--input-text);
+       border-radius: var(--input-radius);
+     }
+     .input:focus {
+       border-color: var(--input-border-focus);
+       box-shadow: var(--input-shadow-focus);
+     }
+
+   Theme switching:
+     <html data-theme="dark">
+     <html data-theme="creator">
+     <html data-theme="minimal">
+
+   ========================================================= */

@@ -3,8 +3,12 @@
 
 echo "🔍 Checking code quality before commit"
 
-# Frontend (Bun)
-cd apps/neuro-chord-frontend && bun lint && cd ../..
+# 1. Frontend (Bun) - używamy --cwd, żeby nie zmieniać folderu skryptu
+echo "⚡ Linting frontend..."
+bun --cwd apps/neuro-chord-frontend lint || exit 1
 
-# Backend (.NET) - formatowanie i sprawdzenie błędów (bez pełnego buildu)
-dotnet format ./apps/neuro-chord-prod-backend/neuro-chord-prod-backend.sln --verify-no-changes
+# 2. Backend (.NET) - ścieżka od roota repozytorium
+echo "🛠️ Checking backend format..."
+dotnet format ./apps/neuro-chord-prod-backend/neuro-chord-prod-backend.sln --verify-no-changes || exit 1
+
+echo "✅ All checks passed!"

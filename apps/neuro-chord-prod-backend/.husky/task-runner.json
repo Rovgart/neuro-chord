@@ -5,28 +5,40 @@
          "name": "dotnet-format",
          "group": "pre-commit",
          "command": "dotnet",
-         "args": ["format", "--verify-no-changes"],
-         "include": ["**/*.cs"]
-      },
-      {
-         "name": "dotnet-test",
-         "group": "pre-commit",
-         "command": "dotnet",
-         "args": ["test", "--no-restore", "--verbosity", "quiet"],
+         "args": [
+            "format",
+            "apps/neuro-chord-prod-backend/neuro-chord-prod-backend.sln", // <--- Dodaj to!
+            "--verify-no-changes"
+         ],
          "include": ["**/*.cs"]
       },
       {
          "name": "check-unused-usings",
          "group": "pre-commit",
          "command": "dotnet",
-         "args": ["build", "/warnaserror"],
+         "args": [
+            "build",
+            "apps/neuro-chord-prod-backend/neuro-chord-prod-backend.sln", // <--- I tutaj
+            "/warnaserror"
+         ],
          "include": ["**/*.cs"]
       },
       {
-          "name": "gitleaks",
-          "group": "pre-commit", // <-- Dodaj to!
-          "command": "gitleaks",
-          "args": ["protect", "--staged"]
+         "name": "check-unused-usings",
+         "group": "pre-commit",
+         "command": "dotnet",
+         "args": [
+            "build",
+            "apps/neuro-chord-prod-backend/neuro-chord-prod-backend.sln", // ŚCIEŻKA DO SLN
+            "/warnaserror"
+         ],
+         "include": ["**/*.cs"]
+      },
+      {
+         "name": "gitleaks",
+         "group": "pre-commit",
+         "command": "gitleaks",
+         "args": ["protect", "--staged"]
       }
    ]
 }

@@ -1,4 +1,4 @@
-import { VerifyPinForm } from '@/components/forms/features/VerifyPin';
+import { VerifyPinForm } from '@/features/auth/components/VerifyPin';
 
 function Page() {
   return <VerifyPinForm />;

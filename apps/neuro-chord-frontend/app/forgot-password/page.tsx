@@ -1,5 +1,5 @@
 'use client';
-import ForgotPasswordForm from '@/components/forms/features/ForgotPasswordForm';
+import ForgotPasswordForm from '@/features/auth/components/ForgotPasswordForm';
 
 function Page() {
   // const searchPar = useSearchParams();
