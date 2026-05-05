@@ -285,7 +285,7 @@ public class AuthService : IAuthService
 
         await _cache.SetStringAsync(token, email, cacheOptions);
 
-        var activationLink = $"https://neurochord.com/verify?token={token}";
+        var activationLink = $"http://localhost:3001/verify-email?token={token}";
         _backgroundJobService.Enqueue<INeuroChordEmailService>(service =>
             service.SendWelcomeEmailAsync(email, activationLink));
     }

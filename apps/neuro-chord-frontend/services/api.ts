@@ -96,7 +96,7 @@ export const neuroapi = createApi({
       query: (data) => {
         return {
           url: `auth/verify-email?token=${data}`,
-          method: 'POST',
+          method: 'GET',
         };
       },
     }),
