@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NeuroChord.Infrastructure.Persistence;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NeuroChord.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260428150356_AddSubscriptionsTable")]
+    partial class AddSubscriptionsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -116,32 +119,6 @@ namespace NeuroChord.Infrastructure.Migrations
                     b.HasIndex("OwnerId");
 
                     b.ToTable("Folders");
-                });
-
-            modelBuilder.Entity("NeuroChordDomain.Entities.IncomingWebhooks", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ExternalEventId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Payload")
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("SubscriptionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SubscriptionId");
-
-                    b.ToTable("IncomingWebhooks");
                 });
 
             modelBuilder.Entity("NeuroChordDomain.Entities.Instrument", b =>
@@ -414,45 +391,6 @@ namespace NeuroChord.Infrastructure.Migrations
                     b.ToTable("StudentsProfile");
                 });
 
-            modelBuilder.Entity("NeuroChordDomain.Entities.SubscriptionPlan", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Period")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("PlanName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("StripePriceId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SubscriptionPlans");
-                });
-
             modelBuilder.Entity("NeuroChordDomain.Entities.Subscriptions", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -464,21 +402,11 @@ namespace NeuroChord.Infrastructure.Migrations
                     b.Property<DateTime>("CurrentPeriodEnd")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsCancellationRequested")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("LastInvoiceId")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("PlanId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("PriceId")
                         .HasColumnType("text");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<string>("StripeCustomerId")
                         .IsRequired()
@@ -491,8 +419,6 @@ namespace NeuroChord.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("UserId");
-
-                    b.HasIndex("PlanId");
 
                     b.ToTable("Subscriptions");
                 });
@@ -683,16 +609,6 @@ namespace NeuroChord.Infrastructure.Migrations
                     b.Navigation("Owner");
                 });
 
-            modelBuilder.Entity("NeuroChordDomain.Entities.IncomingWebhooks", b =>
-                {
-                    b.HasOne("NeuroChordDomain.Entities.Subscriptions", "Subscriptions")
-                        .WithMany("IncomingWebhooks")
-                        .HasForeignKey("SubscriptionId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Subscriptions");
-                });
-
             modelBuilder.Entity("NeuroChordDomain.Entities.Instrument", b =>
                 {
                     b.HasOne("NeuroChordDomain.Entities.Instrument", "Type")
@@ -796,19 +712,11 @@ namespace NeuroChord.Infrastructure.Migrations
 
             modelBuilder.Entity("NeuroChordDomain.Entities.Subscriptions", b =>
                 {
-                    b.HasOne("NeuroChordDomain.Entities.SubscriptionPlan", "Plan")
-                        .WithMany("Subscriptions")
-                        .HasForeignKey("PlanId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("NeuroChordDomain.Entities.User", null)
                         .WithOne()
                         .HasForeignKey("NeuroChordDomain.Entities.Subscriptions", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Plan");
                 });
 
             modelBuilder.Entity("NeuroChordDomain.Entities.TeacherApplication", b =>
@@ -884,16 +792,6 @@ namespace NeuroChord.Infrastructure.Migrations
             modelBuilder.Entity("NeuroChordDomain.Entities.Instrument", b =>
                 {
                     b.Navigation("TeacherInstruments");
-                });
-
-            modelBuilder.Entity("NeuroChordDomain.Entities.SubscriptionPlan", b =>
-                {
-                    b.Navigation("Subscriptions");
-                });
-
-            modelBuilder.Entity("NeuroChordDomain.Entities.Subscriptions", b =>
-                {
-                    b.Navigation("IncomingWebhooks");
                 });
 
             modelBuilder.Entity("NeuroChordDomain.Entities.TeacherProfile", b =>

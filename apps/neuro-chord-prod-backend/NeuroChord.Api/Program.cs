@@ -17,11 +17,16 @@ using NeuroChord.Api.Validators;
 using NeuroChord.Application.Common.Security;
 using NeuroChord.Application.Interfaces;
 using NeuroChord.Application.Services;
+using NeuroChord.Infrastructure.Configuration;
+using NeuroChord.Infrastructure.Interfaces;
 using NeuroChord.Infrastructure.Persistence;
 using NeuroChord.Infrastructure.Persistence.Repositories;
 using NeuroChord.Infrastructure.Services;
 using NeuroChord.Infrastructure.Strategies;
+using Stripe;
+using Account = CloudinaryDotNet.Account;
 using JwtRegisteredClaimNames = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames;
+using SubscriptionService = NeuroChord.Infrastructure.Services.SubscriptionService;
 
 Env.Load();
 var sender = new SmtpClient("127.0.0.1")
@@ -29,6 +34,8 @@ var sender = new SmtpClient("127.0.0.1")
     Port = 1025
 };
 var builder = WebApplication.CreateBuilder(args);
+var stripeSecretKey = builder.Configuration["Stripe:Secret_Key"];
+StripeConfiguration.ApiKey = stripeSecretKey;
 builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
 builder.Services.AddFluentEmail("noreply@neurochord.com", "Neuro Chord System")
     .AddRazorRenderer(typeof(EmailService))
@@ -153,6 +160,23 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<ITeacherApplicationRepository, TeacherApplicationRepository>();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IWebhookStrategy, CheckoutSessionCompletedStrategy>();
+builder.Services.AddScoped<IWebhookStrategy, CheckoutSessionExpiredStrategy>();
+builder.Services.AddScoped<IWebhookStrategy, InvoicePaymentFailedStrategy>();
+builder.Services.AddScoped<IWebhookStrategy, InvoicePaymentSucceededStrategy>();
+builder.Services.AddScoped<IWebhookStrategy, CustomerSubscriptionDeletedStrategy>();
+builder.Services
+    .AddScoped<IWebhookStrategy, CustomerSubscriptionUpdatedStrategy>();
+
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+builder.Services.AddScoped<IWebhookProcessor, WebhookProcessor>();
+builder.Services.AddScoped<IAuditLogsRepository, AuditLogsRepository>();
+builder.Services.AddScoped<IIncomingWebhooksRepository, IncomingWebhooksRepository>();
+builder.Services.AddScoped<IWebhookJob, WebhookJob>();
+builder.Services.AddLogging();
+builder.Services.AddScoped<EventService>(s => new EventService());
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();

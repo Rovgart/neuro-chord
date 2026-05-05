@@ -26,6 +26,9 @@ public class AppDbContext : DbContext
     public DbSet<Instrument> Instruments { get; set; }
     public DbSet<TeacherApplication> TeacherApplications { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<Subscriptions> Subscriptions { get; set; }
+    public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+    public DbSet<IncomingWebhooks> IncomingWebhooks { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -125,6 +128,21 @@ public class AppDbContext : DbContext
             .HasOne<User>(a => a.Target)
             .WithMany(u => u.ReceivedActions)
             .HasForeignKey(a => a.TargetId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Subscriptions>()
+            .HasOne<User>()
+            .WithOne()
+            .HasForeignKey<Subscriptions>(s => s.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Subscriptions>()
+            .HasOne<SubscriptionPlan>(s => s.Plan)
+            .WithMany(sp => sp.Subscriptions)
+            .HasForeignKey(sp => sp.PlanId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<IncomingWebhooks>()
+            .HasOne<Subscriptions>(iw => iw.Subscriptions)
+            .WithMany(s => s.IncomingWebhooks)
+            .HasForeignKey(iw => iw.SubscriptionId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

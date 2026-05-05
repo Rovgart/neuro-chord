@@ -4,5 +4,5 @@ namespace NeuroChord.Application.Interfaces;
 
 public interface IBackgroundJobService
 {
-    void Enqueue(Expression<Action> methodCall);
+    void Enqueue<T>(Expression<Func<T, Task>> methodCall);
 }
