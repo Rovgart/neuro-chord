@@ -245,6 +245,12 @@ public class AuthService : IAuthService
         }
     }
 
+    public async Task<bool> CheckEmailAvailabilityAsync(string email)
+    {
+        var exists = await _unitOfWork.Users.IsEmailAvailable(email);
+        return !exists;
+    }
+
     public async Task LogoutCurrentDeviceAsync(Guid sessionId, Reason reason)
     {
         await _unitOfWork.BeginTransactionAsync();
@@ -267,7 +273,6 @@ public class AuthService : IAuthService
 
         throw new NotImplementedException();
     }
-
 
     public async Task GenerateVerificationTokenAsync(string email)
     {

@@ -108,7 +108,7 @@ export const neuroapi = createApi({
     }),
     checkEmail: builder.query({
       query: (email) => ({
-        url: `auth/check-email-availability?email=${email}`,
+        url: `auth/check-email-availability?email=${encodeURIComponent(email)}`,
         method: 'GET',
       }),
     }),

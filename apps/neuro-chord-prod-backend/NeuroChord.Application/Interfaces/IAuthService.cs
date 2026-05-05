@@ -18,4 +18,6 @@ public interface IAuthService
     Task<bool> VerifyPinAsync(string token, string pin, string email);
 
     Task CompletePasswordResetAsync(string email, string pin, string token, string newPassword);
+
+    Task<bool> CheckEmailAvailabilityAsync(string email);
 }

@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using NeuroChord.Api.Extensions;
@@ -133,6 +134,17 @@ public class AuthController : ControllerBase
 
         await _authService.CompletePasswordResetAsync(request.Email, request.Pin, token, request.NewPassword);
         return Ok(new { message = "Password successfully reset" });
+    }
+
+    [HttpGet("check-email-availability")]
+    [AllowAnonymous]
+    public async Task<ActionResult<bool>> CheckEmailAvailability([FromQuery] string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return BadRequest("Email cannot be empty.");
+
+        var isAvailable = await _authService.CheckEmailAvailabilityAsync(email);
+
+        return Ok(new { isAvailable });
     }
 
     private void SetRefreshTokenCookie(string refreshToken)

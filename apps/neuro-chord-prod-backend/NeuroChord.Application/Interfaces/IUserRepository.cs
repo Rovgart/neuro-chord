@@ -19,4 +19,6 @@ public interface IUserRepository
     Task<List<User>> GetUsersByRoleAsync(Role role);
 
     Task ChangeRoleAsync(User user, Role role);
+
+    Task<bool> IsEmailAvailable(string email);
 }

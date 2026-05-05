@@ -85,4 +85,9 @@ public class UserRepository : IUserRepository
         user.Role = role;
         return Task.CompletedTask;
     }
+
+    public async Task<bool> IsEmailAvailable(string email)
+    {
+        return await _context.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower());
+    }
 }

@@ -6,11 +6,21 @@ export const loginSchema = z.object({
 });
 export const registerSchema = z
   .object({
-    email: z.email({ error: 'Please enter a valid email' }),
-    password: z.string().nonempty({ error: 'Please enter a password' }),
-    confirmPassword: z.string().nonempty({ error: 'Please confirm your password' }),
+    email: z
+      .string()
+      .min(1, { message: 'Email is required.' }) // Odpowiednik NotEmpty()
+      .email({ message: 'Invalid email format.' }), // Odpowiednik EmailAddress()
+
+    password: z
+      .string()
+      .min(1, { message: 'Password is required.' }) // Odpowiednik NotEmpty()
+      .min(8, { message: 'Password must be at least 8 characters long.' })
+      .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter.' })
+      .regex(/[0-9]/, { message: 'Password must contain at least one digit.' }),
+
+    confirmPassword: z.string().min(1, { message: 'Please confirm your password' }),
   })
-  .refine((check) => check.password === check.confirmPassword, {
+  .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
