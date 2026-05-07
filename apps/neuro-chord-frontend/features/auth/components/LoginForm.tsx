@@ -23,15 +23,12 @@ export default function LoginForm() {
   });
 
   const onSubmit = async (data: LoginSchema) => {
-    const payload = await login(data).unwrap();
-    dispatch(
-      setCredentials({
-        user: payload.user,
-        accessToken: payload.accessToken,
-      }),
-    );
-    if (payload) {
-      toast.success('Successfully registered');
+    const result = await login(data);
+    if (result.data) {
+      const { user, accessToken } = result.data;
+      dispatch(setCredentials({ user, accessToken }));
+      toast.success('Successfully logged in');
+      router.push('/dashboard');
     }
   };
 

@@ -3,7 +3,7 @@
 import { useVerifyEmailMutation } from '@/services/api';
 import { Button } from '@heroui/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 function Page() {
   const [verifyEmail, { isLoading, isError, isSuccess }] = useVerifyEmailMutation();
@@ -11,10 +11,29 @@ function Page() {
   const token = params.get('token');
   const router = useRouter();
 
+  const hasRequested = useRef(false);
   useEffect(() => {
-    if (token) verifyEmail(token);
-  }, [token, verifyEmail]);
+    const triggerVerify = async () => {
+      if (token && !hasRequested.current) {
+        hasRequested.current = true;
 
+        // Nie musisz tu dawać try/catch, jeśli jedyne co robisz w catch to logowanie błędu.
+        // Middleware i tak wyświetli toast.
+        await verifyEmail(token)
+          .unwrap()
+          .then(() => {
+            // To wykona się TYLKO przy sukcesie
+            setTimeout(() => router.push('/sign-in'), 3000);
+          })
+          .catch(() => {
+            // Pusty catch wystarczy, żeby uniknąć "Uncaught in promise" w konsoli.
+            // Middleware zajmie się resztą.
+          });
+      }
+    };
+
+    triggerVerify();
+  }, [token, verifyEmail, router]);
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"

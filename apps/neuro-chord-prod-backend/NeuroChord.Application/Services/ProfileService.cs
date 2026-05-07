@@ -1,5 +1,7 @@
+using NeuroChord.Application.DTOs;
 using NeuroChord.Application.Dtos.Profile;
 using NeuroChord.Application.DTOs.Profile;
+using NeuroChord.Application.Exceptions;
 using NeuroChord.Application.Interfaces;
 using NeuroChordDomain.Entities;
 using NeuroChordDomain.Enums;
@@ -9,18 +11,20 @@ namespace NeuroChord.Application.Services;
 
 public class ProfileService : IProfileService
 {
+    private readonly IJwtService _jwtService;
     private readonly IProfileRepository _profileRepository;
     private readonly IFileStorageService _storageService;
     private readonly IUnitOfWork _uow;
     private readonly IUserRepository _userRepository;
 
     public ProfileService(IProfileRepository profileRepository, IUserRepository userRepository,
-        IFileStorageService storageService, IUnitOfWork unitOfWork)
+        IFileStorageService storageService, IUnitOfWork unitOfWork, IJwtService jwtService)
     {
         _profileRepository = profileRepository;
         _userRepository = userRepository;
         _storageService = storageService;
         _uow = unitOfWork;
+        _jwtService = jwtService;
     }
 
     public async Task<ProfileResponseDto> GetByUserIdAsync(Guid userId)
@@ -51,12 +55,14 @@ public class ProfileService : IProfileService
         );
     }
 
-    public async Task<bool> CreateProfileAsync(Guid userId, CreateProfileDto dto)
+    public async Task<AuthResponseDto> CreateProfileAsync(Guid userId, Guid sessionId, CreateProfileDto dto)
     {
         var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null || user.OnboardingComplete) return false;
+        if (user == null || user.OnboardingComplete) throw new ConflictException("Profile already exists");
 
-        if (!Enum.TryParse<Role>(dto.Role.ToString(), out var assignedRole)) return false;
+        if (!Enum.TryParse<Role>(dto.Role.ToString(), out var assignedRole))
+            throw new ConflictException("Invalid role");
+
 
         user.Profile = new Profile
         {
@@ -102,9 +108,31 @@ public class ProfileService : IProfileService
 
         user.OnboardingComplete = true;
         user.RegistrationStep = RegistrationStep.Onboarded;
+        var success = await _uow.SaveChangesAsync() > 0;
+        if (!success) throw new KeyException("Error during updating profile in db");
+        var payload = new AccessTokenPayload(
+            user.Id.ToString(),
+            user.Email,
+            user.Role.ToString(),
+            sessionId.ToString(),
+            user.Profile.UserId.ToString()
+        );
+        var accessToken = _jwtService.GenerateAccessToken(payload);
 
+        var refreshToken = _jwtService.GenerateRefreshToken();
 
-        return await _uow.SaveChangesAsync() > 0;
+        return new AuthResponseDto(
+            accessToken,
+            refreshToken,
+            new UserDto
+            {
+                Id = user.Id.ToString(),
+                Email = user.Email,
+                Role = user.Role.ToString(),
+                IsVerified = user.IsVerified,
+                ProfileId = user.Profile.UserId.ToString()
+            }
+        );
     }
 
     public async Task<bool> UpdateProfileAsync(Guid userId, UpdateProfileDto dto)

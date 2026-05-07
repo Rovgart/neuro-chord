@@ -101,9 +101,17 @@ public class AuthService : IAuthService
     public async Task<bool> VerifyEmailAsync(string token, string ipAddress, string userAgent)
     {
         var email = await _cache.GetStringAsync(token);
-
         if (string.IsNullOrEmpty(email))
             return false;
+        var user = await _userService.GetUserForAuthByEmail(email);
+        Console.WriteLine(email);
+        if (user == null)
+            return false;
+        if (user.IsVerified)
+        {
+            await _cache.RemoveAsync(token);
+            return true;
+        }
 
         var isSuccess = await _userService.MarkEmailAsVerifiedAsync(email);
 

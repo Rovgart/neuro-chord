@@ -1,6 +1,6 @@
 // 'use client';
 
-import OnboardingForm from '@/features/OnboardingForm';
+import OnboardingForm from '@/features/onboarding/components/OnboardingForm';
 
 function Page() {
   return <OnboardingForm />;

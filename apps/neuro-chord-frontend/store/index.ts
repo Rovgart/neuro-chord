@@ -1,16 +1,40 @@
+// store/index.ts
+
 import { neuroapi } from '@/services/api';
-import authReducer from '@/store/slices/authSlice';
-import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
+import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
 import { rtkQueryErrorLogger } from './middleware/errorMiddleware';
-export const makeStore = () => {
-  return configureStore({
-    reducer: {
-      auth: authReducer,
-      [neuroapi.reducerPath]: neuroapi.reducer,
-    },
-    middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(neuroapi.middleware, rtkQueryErrorLogger),
-  });
+import authReducer from './slices/authSlice';
+
+const rootReducer = combineReducers({
+  auth: authReducer,
+  [neuroapi.reducerPath]: neuroapi.reducer,
+});
+
+const persistConfig = {
+  key: 'root',
+  storage,
+  whitelist: ['auth'],
 };
-export type AppStore = ReturnType<typeof makeStore>;
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
+export const makeStore = () => {
+  const store = configureStore({
+    reducer: persistedReducer,
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware({
+        serializableCheck: {
+          ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        },
+      }).concat(neuroapi.middleware, rtkQueryErrorLogger),
+  });
+
+  const persistor = persistStore(store);
+  return { store, persistor };
+};
+
+export type AppStore = ReturnType<typeof makeStore>['store'];
 export type RootState = ReturnType<AppStore['getState']>;
 export type AppDispatch = AppStore['dispatch'];

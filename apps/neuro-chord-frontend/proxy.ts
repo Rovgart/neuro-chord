@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 export default async function middleware(request: NextRequest) {
-  const token = request.cookies.get('access_token')?.value;
+  const token = request.cookies.get('accessToken')?.value;
   const { pathname } = request.nextUrl;
 
   // Definiujemy strefy
@@ -20,7 +20,7 @@ export default async function middleware(request: NextRequest) {
 
   try {
     const { payload } = await jwtVerify(token, SECRET);
-    const isOnboardingComplete = !!payload.onboardingComplete;
+    const isOnboardingComplete = !!payload.profile_id;
 
     if (isAuthPage) {
       const dest = isOnboardingComplete ? '/dashboard' : '/onboarding';
@@ -39,7 +39,7 @@ export default async function middleware(request: NextRequest) {
   } catch (error: unknown) {
     console.error(error);
     const response = NextResponse.redirect(new URL('/sign-in', request.url));
-    response.cookies.delete('access_token');
+    response.cookies.delete('accessToken');
     return response;
   }
 }

@@ -28,8 +28,8 @@ export default function RegisterForm() {
   const userEmail = watch('email');
 
   const onSubmit = async (data: RegisterSchema) => {
-    const result = await signUp(data).unwrap();
-    if (result) {
+    const result = await signUp(data);
+    if (result.data) {
       toast.success('Account created successfully');
     }
   };
@@ -86,7 +86,7 @@ export default function RegisterForm() {
                     clearErrors('email');
                   }
                 } catch {
-                  setError('email', { type: 'manual', message: 'Błąd połączenia z serwerem' });
+                  setError('email', { type: 'manual', message: 'Unexpected error occurred' });
                 }
               }
             }}

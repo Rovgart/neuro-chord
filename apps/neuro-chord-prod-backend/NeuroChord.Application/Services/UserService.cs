@@ -21,17 +21,10 @@ public class UserService : IUserService
 
     public async Task<UserInternalAuthDto> GetUserForAuthByEmail(string email)
     {
-        var user = await _userRepository.GetUserEntityByEmailAsync(email);
+        var user = await _userRepository.GetByEmailAsync(email);
         if (user == null) throw new NotFoundException("User with this email not found");
 
-        return new UserInternalAuthDto
-        {
-            Id = user.Id,
-            Email = user.Email,
-            PasswordHash = user.PasswordHash,
-            Role = user.Role.ToString(),
-            IsVerified = user.IsVerified
-        };
+        return user;
     }
 
     public async Task<UserDto> CreateUser(CreateUserRequest request)

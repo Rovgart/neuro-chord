@@ -1,14 +1,19 @@
-'use client';
 import { type AppStore, makeStore } from '@/store';
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Provider } from 'react-redux';
+import { type Persistor } from 'redux-persist';
+import { PersistGate } from 'redux-persist/integration/react';
+
+type StoreInstance = { store: AppStore; persistor: Persistor };
+
 export default function ReduxProvider({ children }: { children: ReactNode }) {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const storeRef = useRef<AppStore>(null);
-  if (!storeRef.current) {
-    storeRef.current = makeStore();
-  }
-  // eslint-disable-next-line react/no-render-return-value
-  const store = storeRef.current;
-  return <Provider store={store}>{children}</Provider>;
+  const [{ store, persistor }] = useState<StoreInstance>(() => makeStore());
+
+  return (
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        {children}
+      </PersistGate>
+    </Provider>
+  );
 }

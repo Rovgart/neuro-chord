@@ -1,8 +1,10 @@
+import { AuthResponseDto } from '@/features/auth/types';
+import { OnboardingDtoType } from '@/features/onboarding/types';
 import type { LoginSchema, RegisterSchema } from '@/schemas/auth';
 import type { RootState } from '@/store';
-import { selectCurrentToken, setCredentials } from '@/store/slices/authSlice';
-import type { LoginResponseT, UserRegisterResponseT } from '@/types';
-import type { BaseQueryFn } from '@reduxjs/toolkit/query';
+import { removeCredentials, selectCurrentToken, setCredentials } from '@/store/slices/authSlice';
+import type { UserRegisterResponseT } from '@/types';
+import type { BaseQueryApi, BaseQueryFn } from '@reduxjs/toolkit/query';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 const getUserAgent = () => (typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown');
@@ -11,6 +13,7 @@ const baseQuery = fetchBaseQuery({
   baseUrl: 'http://localhost:3000/api',
   prepareHeaders: (headers, { getState }) => {
     const token = selectCurrentToken(getState() as RootState);
+    console.log('Full State', getState()); // Sprawdź to w konsoli przeglądarki
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
@@ -27,30 +30,38 @@ const baseQueryWithReauth: BaseQueryFn = async (args, api, options) => {
   let result = await baseQuery(args, api, options);
   if (result.error?.status === 401) {
     try {
-      const refreshResult = await api.dispatch(neuroapi.endpoints.refreshToken.initiate({}));
+      const refreshResult = await api.dispatch(neuroapi.endpoints.refreshToken.initiate({})).unwrap();
       if (refreshResult.data) {
+        api.dispatch(setCredentials({ user: refreshResult.data.user, accessToken: refreshResult.data.accessToken }));
         result = await baseQuery(args, api, options);
       } else {
         await api.dispatch(neuroapi.endpoints.logout.initiate({}));
-        api.dispatch(setCredentials({ user: null, accessToken: null }));
+        handleLogout(api);
       }
     } catch (err: unknown) {
       console.error('Reauth error', err);
+      handleLogout(api);
     }
   }
   return result;
+};
+const handleLogout = (api: BaseQueryApi) => {
+  api.dispatch(removeCredentials());
+  // Możesz tu też wywołać api.dispatch(neuroapi.endpoints.logout.initiate({}));
 };
 export const neuroapi = createApi({
   reducerPath: 'neuroapi',
   baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
-    login: builder.mutation<LoginResponseT, LoginSchema>({
+    login: builder.mutation<AuthResponseDto, LoginSchema>({
       query: (credentials) => ({
         url: 'auth/login/',
         method: 'POST',
         body: { ...credentials, userAgent: getUserAgent() },
       }),
+      transformResponse: (baseQueryReturnValue: { response: AuthResponseDto }) => baseQueryReturnValue.response,
     }),
+
     register: builder.mutation<UserRegisterResponseT, RegisterSchema>({
       query: (data) => ({
         url: 'auth/register',
@@ -85,9 +96,9 @@ export const neuroapi = createApi({
         body: data,
       }),
     }),
-    completeProfile: builder.mutation({
-      query: (dto) => ({
-        url: 'complete-profile/',
+    completeOnboarding: builder.mutation({
+      query: (dto: OnboardingDtoType) => ({
+        url: 'profile/onboarding/',
         method: 'POST',
         body: dto,
       }),
@@ -129,6 +140,6 @@ export const {
   useInitRecoverAccountMutation,
   useRegisterMutation,
   useVerifyPinMutation,
-  useCompleteProfileMutation,
+  useCompleteOnboardingMutation,
   useGetProfileQuery,
 } = neuroapi;
