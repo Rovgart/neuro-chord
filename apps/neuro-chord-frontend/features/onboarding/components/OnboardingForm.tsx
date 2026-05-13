@@ -19,7 +19,6 @@ function OnboardingForm() {
     register,
     handleSubmit,
     control,
-
     formState: { errors },
   } = useForm<OnboardingDtoType>({
     resolver: zodResolver(OnboardingDto),
@@ -40,17 +39,15 @@ function OnboardingForm() {
   const { onBlur: onBlurSpecialization, ...restSpecialization } = register('specialization');
 
   const onSubmit = async (data: OnboardingDtoType) => {
-    const result = await completeOnboarding(data);
+    const result = await completeOnboarding(data).unwrap();
     console.log(result);
 
-    if (result.data) {
-      dispatch(setCredentials({ user: result.data.user, accessToken: result.data.accessToken }));
+    if (result) {
+      dispatch(setCredentials({ user: result.user, accessToken: result.accessToken }));
       router.refresh();
       router.push('/dashboard');
       return;
     }
-
-    console.error('Onboarding error', result.error);
   };
 
   const focusStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {

@@ -72,7 +72,7 @@ public class AuthController : ControllerBase
         Response.Cookies.Delete("accessToken", cookieOptions);
         Response.Cookies.Delete("refreshToken", cookieOptions);
         await _authService.LogoutAsync(userId);
-        return Ok(new { message = "Logout Successful" });
+        return NoContent();
     }
 
     [HttpGet("verify-email")]

@@ -29,13 +29,12 @@ public class ProfileService : IProfileService
 
     public async Task<ProfileResponseDto> GetByUserIdAsync(Guid userId)
     {
-        // Przypominajka: Repozytorium musi dociągać Include(p => p.User).ThenInclude(...)
         var profile = await _profileRepository.GetByUserIdAsync(userId);
 
         if (profile == null) return null;
 
         return new ProfileResponseDto(
-            profile.UserId.ToString(), // Zmienione z Id na UserId
+            profile.UserId.ToString(),
             profile.DisplayName,
             profile.Description,
             profile.ImgUrl,
