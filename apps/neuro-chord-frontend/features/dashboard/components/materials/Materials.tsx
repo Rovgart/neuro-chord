@@ -6,72 +6,31 @@ import { openModal } from '@/store/slices/uiSlice';
 import { Button } from '@heroui/react';
 import { Link2, Plus, Upload } from 'lucide-react';
 import { useState } from 'react';
-import type { MaterialDto } from '../../types/materials';
+import type { MaterialDto, MaterialType } from '../../types/materials';
 import MaterialItem from './Material';
 
-/* =========================================================
-   MOCK DATA
-   ========================================================= */
+const FILTER_OPTIONS = ['All', 'File', 'Video', 'Link', 'Image'] as const;
+const TYPE_FILTERS = ['All', 'File', 'Video', 'Link', 'Image'] as const;
+const ACCESS_FILTERS = ['All', 'Public', 'Private'] as const;
 
-// const MOCK_MATERIALS: MaterialDto[] = [
-//   {
-//     id: '1',
-//     topic: 'Introduction to Music Theory',
-//     url: '#',
-//     type: 'File' as MaterialType,
-//     ownerId: 'owner-1',
-//     isPublic: true,
-//     folderId: 'folder-1',
-//     requiresSubscription: false,
-//     createdAt: '2026-05-01T10:00:00.000Z',
-//     updatedAt: '2026-05-01T10:00:00.000Z',
-//   },
-//   {
-//     id: '2',
-//     topic: 'Fast Picking Techniques',
-//     url: '#',
-//     type: 'Video' as MaterialType,
-//     ownerId: 'owner-1',
-//     isPublic: true,
-//     folderId: 'folder-1',
-//     requiresSubscription: true,
-//     createdAt: '2026-05-03T12:00:00.000Z',
-//     updatedAt: '2026-05-03T12:00:00.000Z',
-//   },
-//   {
-//     id: '3',
-//     topic: 'Principles of Counterpoint',
-//     url: '#',
-//     type: 'Link' as MaterialType,
-//     ownerId: 'owner-1',
-//     isPublic: false,
-//     folderId: 'folder-1',
-//     requiresSubscription: true,
-//     createdAt: '2026-05-05T15:30:00.000Z',
-//     updatedAt: '2026-05-05T15:30:00.000Z',
-//   },
-//   {
-//     id: '4',
-//     topic: 'Chord Diagrams Reference Sheet',
-//     url: '#',
-//     type: 'Image' as MaterialType,
-//     ownerId: 'owner-1',
-//     isPublic: true,
-//     folderId: 'folder-1',
-//     requiresSubscription: false,
-//     createdAt: '2026-05-07T09:15:00.000Z',
-//     updatedAt: '2026-05-07T09:15:00.000Z',
-//   },
-// ];
-
-/* =========================================================
-   COMPONENT
-   ========================================================= */
+type TypeFilter = (typeof TYPE_FILTERS)[number];
+type AccessFilter = (typeof ACCESS_FILTERS)[number];
+type FilterOption = (typeof FILTER_OPTIONS)[number];
 
 function MaterialsList() {
   const [starredIds, setStarredIds] = useState<Set<string>>(new Set());
+  const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('All');
+  const [accessFilter, setAccessFilter] = useState<AccessFilter>('All');
   const { data: ownedMaterials, isLoading, isError } = useGetOwnedMaterialsQuery();
   const dispatch = useAppDispatch();
+
+  const materials = ownedMaterials ?? [];
+
+  const filtered = materials
+    .filter((m) => typeFilter === 'All' || m.type === (typeFilter as MaterialType))
+    .filter((m) => accessFilter === 'All' || m.isPublic === (accessFilter === 'Public'));
+
   const toggleStar = (id: string) =>
     setStarredIds((prev) => {
       const next = new Set(prev);
@@ -84,12 +43,10 @@ function MaterialsList() {
       window.open(material.url, '_blank', 'noopener,noreferrer');
     }
   };
+
   const handleOpenAddModal = () => {
-    // Wysyłasz akcję z typem modalu.
-    // Data może być nullem, jeśli to nowy obiekt.
     dispatch(openModal({ type: 'CREATE_MATERIAL', data: null }));
   };
-  const materials = ownedMaterials ?? [];
 
   /* ── LOADING ─────────────────────────────────────────── */
   if (isLoading) {
@@ -129,7 +86,6 @@ function MaterialsList() {
   return (
     <div className="flex flex-col gap-8" style={{ fontFamily: 'var(--font-sans)' }}>
       {/* ── HEADER ───────────────────────────────────────── */}
-      {/* ── HEADER ───────────────────────────────────────── */}
       <div className="flex justify-between items-center gap-4">
         <div className="flex flex-col gap-1">
           <h2 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>
@@ -141,6 +97,7 @@ function MaterialsList() {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
+          {/* Count shows filtered results */}
           <span
             className="px-3 py-1 rounded-full text-xs font-semibold"
             style={{
@@ -148,7 +105,7 @@ function MaterialsList() {
               color: 'var(--color-primary)',
             }}
           >
-            {materials.length} items
+            {filtered.length} / {materials.length} items
           </span>
 
           <Button
@@ -167,22 +124,89 @@ function MaterialsList() {
         </div>
       </div>
 
+      {/* ── FILTERS ──────────────────────────────────────── */}
+      <div className="flex flex-col gap-2">
+        {/* Type */}
+        <div className="flex items-center gap-2">
+          {TYPE_FILTERS.map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setTypeFilter(type)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              style={{
+                background: typeFilter === type ? 'var(--color-primary-subtle)' : 'transparent',
+                color: typeFilter === type ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                border: typeFilter === type ? '1px solid var(--color-border)' : '1px solid transparent',
+              }}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
+
+        {/* Visibility */}
+        <div className="flex items-center gap-2">
+          {ACCESS_FILTERS.map((access) => (
+            <button
+              key={access}
+              type="button"
+              onClick={() => setAccessFilter(access)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              style={{
+                background: accessFilter === access ? 'oklch(from var(--teal-500) l c h / 0.1)' : 'transparent',
+                color: accessFilter === access ? 'var(--teal-600)' : 'var(--color-text-muted)',
+                border: accessFilter === access ? '1px solid var(--teal-500)' : '1px solid transparent',
+              }}
+            >
+              {access}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── DIVIDER ──────────────────────────────────────── */}
       <div className="h-px w-full" style={{ background: 'var(--color-border-subtle)' }} />
 
       {/* ── GRID ─────────────────────────────────────────── */}
       {materials.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {materials.map((material) => (
-            <MaterialItem
-              key={material.id}
-              material={material}
-              isStarred={starredIds.has(material.id)}
-              onStar={toggleStar}
-              onOpen={handleOpen}
-            />
-          ))}
-        </div>
+        filtered.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filtered.map((material) => (
+              <MaterialItem
+                key={material.id}
+                material={material}
+                isStarred={starredIds.has(material.id)}
+                onStar={toggleStar}
+                onOpen={handleOpen}
+              />
+            ))}
+          </div>
+        ) : (
+          /* ── NO FILTER RESULTS ───────────────────────── */
+          <div
+            className="flex flex-col items-center justify-center gap-3 py-16 rounded-2xl text-center"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px dashed var(--color-border)',
+            }}
+          >
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+              No {activeFilter} materials
+            </p>
+            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              Try a different filter or add a new material.
+            </p>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('All')}
+              className="text-xs font-semibold underline underline-offset-2"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              Clear filter
+            </button>
+          </div>
+        )
       ) : (
         /* ── EMPTY STATE ─────────────────────────────────── */
         <div
@@ -214,9 +238,7 @@ function MaterialsList() {
 
           <div className="flex items-center gap-3">
             <Button
-              onPress={() => {
-                handleOpenAddModal();
-              }}
+              onPress={handleOpenAddModal}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-colors"
               style={{
                 background: 'var(--button-bg)',
@@ -230,9 +252,7 @@ function MaterialsList() {
             </Button>
 
             <Button
-              onPress={() => {
-                /* open add link modal */
-              }}
+              onPress={handleOpenAddModal}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-colors"
               style={{
                 background: 'var(--button-ghost-bg)',
@@ -250,4 +270,5 @@ function MaterialsList() {
     </div>
   );
 }
+
 export default MaterialsList;
