@@ -7,9 +7,11 @@ import { FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, R
 import storage from 'redux-persist/lib/storage';
 import { rtkQueryErrorLogger } from './middleware/errorMiddleware';
 import authReducer from './slices/authSlice';
+import uiReducer from './slices/uiSlice';
 
 const rootReducer = combineReducers({
   auth: authReducer,
+  ui: uiReducer,
   [neuroapi.reducerPath]: neuroapi.reducer,
 });
 

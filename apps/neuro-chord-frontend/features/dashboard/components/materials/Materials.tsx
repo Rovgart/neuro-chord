@@ -1,64 +1,68 @@
 'use client';
 
+import { useGetOwnedMaterialsQuery } from '@/services/api';
+import { useAppDispatch } from '@/store';
+import { openModal } from '@/store/slices/uiSlice';
 import { Button } from '@heroui/react';
-import { Link2, Upload } from 'lucide-react';
+import { Link2, Plus, Upload } from 'lucide-react';
 import { useState } from 'react';
-import MaterialItem, { type MaterialDto, type MaterialType } from './Material';
+import type { MaterialDto } from '../../types/materials';
+import MaterialItem from './Material';
 
 /* =========================================================
    MOCK DATA
    ========================================================= */
 
-const MOCK_MATERIALS: MaterialDto[] = [
-  {
-    id: '1',
-    topic: 'Introduction to Music Theory',
-    url: '#',
-    type: 'File' as MaterialType,
-    ownerId: 'owner-1',
-    isPublic: true,
-    folderId: 'folder-1',
-    requiresSubscription: false,
-    createdAt: '2026-05-01T10:00:00.000Z',
-    updatedAt: '2026-05-01T10:00:00.000Z',
-  },
-  {
-    id: '2',
-    topic: 'Fast Picking Techniques',
-    url: '#',
-    type: 'Video' as MaterialType,
-    ownerId: 'owner-1',
-    isPublic: true,
-    folderId: 'folder-1',
-    requiresSubscription: true,
-    createdAt: '2026-05-03T12:00:00.000Z',
-    updatedAt: '2026-05-03T12:00:00.000Z',
-  },
-  {
-    id: '3',
-    topic: 'Principles of Counterpoint',
-    url: '#',
-    type: 'Link' as MaterialType,
-    ownerId: 'owner-1',
-    isPublic: false,
-    folderId: 'folder-1',
-    requiresSubscription: true,
-    createdAt: '2026-05-05T15:30:00.000Z',
-    updatedAt: '2026-05-05T15:30:00.000Z',
-  },
-  {
-    id: '4',
-    topic: 'Chord Diagrams Reference Sheet',
-    url: '#',
-    type: 'Image' as MaterialType,
-    ownerId: 'owner-1',
-    isPublic: true,
-    folderId: 'folder-1',
-    requiresSubscription: false,
-    createdAt: '2026-05-07T09:15:00.000Z',
-    updatedAt: '2026-05-07T09:15:00.000Z',
-  },
-];
+// const MOCK_MATERIALS: MaterialDto[] = [
+//   {
+//     id: '1',
+//     topic: 'Introduction to Music Theory',
+//     url: '#',
+//     type: 'File' as MaterialType,
+//     ownerId: 'owner-1',
+//     isPublic: true,
+//     folderId: 'folder-1',
+//     requiresSubscription: false,
+//     createdAt: '2026-05-01T10:00:00.000Z',
+//     updatedAt: '2026-05-01T10:00:00.000Z',
+//   },
+//   {
+//     id: '2',
+//     topic: 'Fast Picking Techniques',
+//     url: '#',
+//     type: 'Video' as MaterialType,
+//     ownerId: 'owner-1',
+//     isPublic: true,
+//     folderId: 'folder-1',
+//     requiresSubscription: true,
+//     createdAt: '2026-05-03T12:00:00.000Z',
+//     updatedAt: '2026-05-03T12:00:00.000Z',
+//   },
+//   {
+//     id: '3',
+//     topic: 'Principles of Counterpoint',
+//     url: '#',
+//     type: 'Link' as MaterialType,
+//     ownerId: 'owner-1',
+//     isPublic: false,
+//     folderId: 'folder-1',
+//     requiresSubscription: true,
+//     createdAt: '2026-05-05T15:30:00.000Z',
+//     updatedAt: '2026-05-05T15:30:00.000Z',
+//   },
+//   {
+//     id: '4',
+//     topic: 'Chord Diagrams Reference Sheet',
+//     url: '#',
+//     type: 'Image' as MaterialType,
+//     ownerId: 'owner-1',
+//     isPublic: true,
+//     folderId: 'folder-1',
+//     requiresSubscription: false,
+//     createdAt: '2026-05-07T09:15:00.000Z',
+//     updatedAt: '2026-05-07T09:15:00.000Z',
+//   },
+// ];
 
 /* =========================================================
    COMPONENT
@@ -66,7 +70,8 @@ const MOCK_MATERIALS: MaterialDto[] = [
 
 function MaterialsList() {
   const [starredIds, setStarredIds] = useState<Set<string>>(new Set());
-
+  const { data: ownedMaterials, isLoading, isError } = useGetOwnedMaterialsQuery();
+  const dispatch = useAppDispatch();
   const toggleStar = (id: string) =>
     setStarredIds((prev) => {
       const next = new Set(prev);
@@ -79,11 +84,53 @@ function MaterialsList() {
       window.open(material.url, '_blank', 'noopener,noreferrer');
     }
   };
+  const handleOpenAddModal = () => {
+    // Wysyłasz akcję z typem modalu.
+    // Data może być nullem, jeśli to nowy obiekt.
+    dispatch(openModal({ type: 'CREATE_MATERIAL', data: null }));
+  };
+  const materials = ownedMaterials ?? [];
+
+  /* ── LOADING ─────────────────────────────────────────── */
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div
+          className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
+          style={{
+            borderColor: 'var(--color-border)',
+            borderTopColor: 'var(--color-primary)',
+          }}
+        />
+      </div>
+    );
+  }
+
+  /* ── ERROR ───────────────────────────────────────────── */
+  if (isError) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center gap-3 py-20 rounded-2xl text-center"
+        style={{
+          background: 'var(--color-danger-subtle)',
+          border: '1px solid var(--color-danger)',
+        }}
+      >
+        <p className="text-sm font-semibold" style={{ color: 'var(--color-danger)' }}>
+          Failed to load materials
+        </p>
+        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          Please refresh the page or try again later.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8" style={{ fontFamily: 'var(--font-sans)' }}>
-      {/* ── HEADER ─────────────────────────────────────── */}
-      <div className="flex justify-between items-end gap-4">
+      {/* ── HEADER ───────────────────────────────────────── */}
+      {/* ── HEADER ───────────────────────────────────────── */}
+      <div className="flex justify-between items-center gap-4">
         <div className="flex flex-col gap-1">
           <h2 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>
             Learning Materials
@@ -93,25 +140,40 @@ function MaterialsList() {
           </p>
         </div>
 
-        {/* Count pill */}
-        <span
-          className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold"
-          style={{
-            background: 'var(--color-primary-subtle)',
-            color: 'var(--color-primary)',
-          }}
-        >
-          {MOCK_MATERIALS.length} items
-        </span>
+        <div className="flex items-center gap-3 shrink-0">
+          <span
+            className="px-3 py-1 rounded-full text-xs font-semibold"
+            style={{
+              background: 'var(--color-primary-subtle)',
+              color: 'var(--color-primary)',
+            }}
+          >
+            {materials.length} items
+          </span>
+
+          <Button
+            onPress={handleOpenAddModal}
+            className="flex items-center gap-2 h-9 px-4 text-sm font-semibold transition-colors"
+            style={{
+              background: 'var(--button-bg)',
+              color: 'var(--button-text)',
+              borderRadius: 'var(--button-radius)',
+              boxShadow: 'var(--button-shadow)',
+            }}
+          >
+            <Plus size={15} strokeWidth={2.5} />
+            Add Material
+          </Button>
+        </div>
       </div>
 
-      {/* ── DIVIDER ────────────────────────────────────── */}
+      {/* ── DIVIDER ──────────────────────────────────────── */}
       <div className="h-px w-full" style={{ background: 'var(--color-border-subtle)' }} />
 
-      {/* ── GRID ───────────────────────────────────────── */}
-      {MOCK_MATERIALS.length > 0 ? (
+      {/* ── GRID ─────────────────────────────────────────── */}
+      {materials.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {MOCK_MATERIALS.map((material) => (
+          {materials.map((material) => (
             <MaterialItem
               key={material.id}
               material={material}
@@ -122,7 +184,7 @@ function MaterialsList() {
           ))}
         </div>
       ) : (
-        /* ── EMPTY STATE ─────────────────────────────── */
+        /* ── EMPTY STATE ─────────────────────────────────── */
         <div
           className="flex flex-col items-center justify-center gap-5 py-20 rounded-2xl text-center"
           style={{
@@ -130,7 +192,6 @@ function MaterialsList() {
             border: '1px dashed var(--color-border)',
           }}
         >
-          {/* Icon */}
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center"
             style={{
@@ -138,11 +199,9 @@ function MaterialsList() {
               color: 'var(--color-primary)',
             }}
           >
-            {/* FolderOpen musi być zaimportowane z lucide-react, jeśli go nie ma - dodaj w importach */}
             <Upload size={26} strokeWidth={1.5} />
           </div>
 
-          {/* Copy */}
           <div className="flex flex-col gap-1.5 max-w-xs">
             <p className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
               No materials yet
@@ -153,11 +212,10 @@ function MaterialsList() {
             </p>
           </div>
 
-          {/* Actions */}
           <div className="flex items-center gap-3">
             <Button
-              onClick={() => {
-                /* open upload modal */
+              onPress={() => {
+                handleOpenAddModal();
               }}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-colors"
               style={{
@@ -172,7 +230,7 @@ function MaterialsList() {
             </Button>
 
             <Button
-              onClick={() => {
+              onPress={() => {
                 /* open add link modal */
               }}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-colors"
@@ -192,5 +250,4 @@ function MaterialsList() {
     </div>
   );
 }
-
 export default MaterialsList;

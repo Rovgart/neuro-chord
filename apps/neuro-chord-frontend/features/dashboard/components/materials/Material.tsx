@@ -3,21 +3,7 @@
 import { Button } from '@heroui/react';
 import { FileText, Globe, Image, Link, Lock, MoreHorizontal, Star, Video } from 'lucide-react';
 import { useState } from 'react';
-
-export type MaterialType = 'File' | 'Video' | 'Link' | 'Image';
-
-export interface MaterialDto {
-  id: string;
-  topic: string;
-  url: string;
-  type: MaterialType;
-  ownerId: string;
-  isPublic: boolean;
-  folderId: string;
-  requiresSubscription: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { MaterialDto, MaterialType } from '../../types/materials';
 
 interface MaterialItemProps {
   material: MaterialDto;

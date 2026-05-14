@@ -1,6 +1,7 @@
-import { AuthResponseDto } from '@/features/auth/types';
-import { OnboardingDtoType } from '@/features/onboarding/types';
-import { ProfileResponseDto } from '@/features/profile/types/profile';
+import type { AuthResponseDto } from '@/features/auth/types';
+import type { MaterialDto, MaterialsListResponse } from '@/features/dashboard/types/materials';
+import type { OnboardingDtoType } from '@/features/onboarding/types';
+import type { ProfileResponseDto } from '@/features/profile/types/profile';
 import type { LoginSchema, RegisterSchema } from '@/schemas/auth';
 import type { RootState } from '@/store';
 import { removeCredentials, selectCurrentToken, setCredentials } from '@/store/slices/authSlice';
@@ -67,6 +68,7 @@ const handleLogout = (api: BaseQueryApi) => {
 export const neuroapi = createApi({
   reducerPath: 'neuroapi',
   baseQuery: baseQueryWithReauth,
+  tagTypes: ['Materials'],
   extractRehydrationInfo(action, { reducerPath }) {
     if (
       action.type === 'persist/REHYDRATE' &&
@@ -131,6 +133,34 @@ export const neuroapi = createApi({
         body: dto,
       }),
     }),
+    createMaterial: builder.mutation<void, FormData>({
+      query: (formData) => ({
+        url: '/materials',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Materials'], // "Po tym sukcesie, wszystko z tagiem Materials ma się odświeżyć"
+    }),
+    getOwnedMaterials: builder.query<MaterialsListResponse, void>({
+      query: () => ({
+        url: 'materials/owned',
+        method: 'GET',
+      }),
+      providesTags: ['Materials'],
+    }),
+    getSharedMaterials: builder.query<MaterialsListResponse, void>({
+      query: () => ({
+        url: 'materials/shared',
+        method: 'GET',
+      }),
+      providesTags: ['Materials'],
+    }),
+    getMaterialById: builder.query<MaterialDto, string>({
+      query: (id: string) => ({
+        url: `materials/${id}`,
+        method: 'GET',
+      }),
+    }),
     verifyEmail: builder.mutation({
       query: (token: string) => {
         return {
@@ -163,6 +193,7 @@ export const {
   useLoginMutation,
   useVerifyEmailMutation,
   useResetPasswordMutation,
+  useCreateMaterialMutation,
   useLazyCheckEmailQuery,
   useLogoutMutation,
   useInitRecoverAccountMutation,
@@ -170,4 +201,7 @@ export const {
   useVerifyPinMutation,
   useCompleteOnboardingMutation,
   useGetProfileQuery,
+  useGetOwnedMaterialsQuery,
+  useGetSharedMaterialsQuery,
+  useGetMaterialByIdQuery,
 } = neuroapi;
