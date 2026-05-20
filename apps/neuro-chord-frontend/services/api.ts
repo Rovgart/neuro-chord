@@ -19,7 +19,7 @@ const baseQuery = fetchBaseQuery({
   baseUrl: 'http://localhost:3000/api',
   prepareHeaders: (headers, { getState }) => {
     const token = selectCurrentToken(getState() as RootState);
-    console.log('Full State', getState()); // Sprawdź to w konsoli przeglądarki
+    console.log('Full State', getState());
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
@@ -139,7 +139,7 @@ export const neuroapi = createApi({
         method: 'POST',
         body: formData,
       }),
-      invalidatesTags: ['Materials'], // "Po tym sukcesie, wszystko z tagiem Materials ma się odświeżyć"
+      invalidatesTags: ['Materials'],
     }),
     getOwnedMaterials: builder.query<MaterialsListResponse, void>({
       query: () => ({

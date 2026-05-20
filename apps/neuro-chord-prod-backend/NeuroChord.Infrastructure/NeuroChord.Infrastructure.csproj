@@ -28,6 +28,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.5"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11"/>
+        <PackageReference Include="PdfPig" Version="0.1.14"/>
         <PackageReference Include="SecretsScanner.Gitleaks" Version="1.0.1"/>
         <PackageReference Include="SonarAnalyzer.CSharp" Version="10.23.0.137933">
             <PrivateAssets>all</PrivateAssets>
