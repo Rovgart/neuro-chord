@@ -7,4 +7,6 @@ public class UserDto
     public string Role { get; set; }
     public bool IsVerified { get; set; }
     public string ProfileId { get; set; }
+
+    public string SubscriptionPlanName { get; set; } = "None";
 }

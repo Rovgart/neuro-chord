@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NeuroChord.Infrastructure.Persistence;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NeuroChord.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260518110549_AddHasSelectedPlanFlag")]
+    partial class AddHasSelectedPlanFlag
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -420,14 +423,6 @@ namespace NeuroChord.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Badge")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Cta")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<string>("Currency")
                         .IsRequired()
                         .HasMaxLength(3)
@@ -436,9 +431,6 @@ namespace NeuroChord.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
-
-                    b.Property<bool>("Highlight")
-                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -458,14 +450,6 @@ namespace NeuroChord.Infrastructure.Migrations
                     b.Property<string>("StripePriceId")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<string>("StudentLimit")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Tagline")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
 
                     b.HasKey("Id");
 
@@ -814,37 +798,6 @@ namespace NeuroChord.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("NeuroChordDomain.Entities.SubscriptionPlan", b =>
-                {
-                    b.OwnsMany("NeuroChordDomain.Entities.PlanFeature", "Features", b1 =>
-                        {
-                            b1.Property<Guid>("SubscriptionPlanId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<int>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("integer");
-
-                            b1.Property<bool>("Included")
-                                .HasColumnType("boolean");
-
-                            b1.Property<string>("Label")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.HasKey("SubscriptionPlanId", "Id");
-
-                            b1.ToTable("SubscriptionPlans");
-
-                            b1.ToJson("Features");
-
-                            b1.WithOwner()
-                                .HasForeignKey("SubscriptionPlanId");
-                        });
-
-                    b.Navigation("Features");
                 });
 
             modelBuilder.Entity("NeuroChordDomain.Entities.Subscriptions", b =>

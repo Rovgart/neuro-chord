@@ -123,10 +123,30 @@ export const neuroapi = createApi({
         method: 'GET',
       }),
     }),
-    refreshToken: builder.query({
+    refreshToken: builder.mutation({
       query: () => ({
-        url: `auth/me`,
+        url: `auth/refresh-token`,
+        method: 'POST',
+      }),
+    }),
+    getSubscriptions: builder.query({
+      query: () => ({
+        url: 'subscriptions/',
         method: 'GET',
+      }),
+    }),
+    selectPlan: builder.mutation({
+      query: (planId: string) => ({
+        url: 'payments/select-plan/',
+        method: 'POST',
+        body: { planId },
+      }),
+    }),
+    createCheckoutSessions: builder.mutation({
+      query: (data: { planId: string; priceId: string }) => ({
+        url: 'payments/create-checkout/',
+        method: 'POST',
+        body: data,
       }),
     }),
   }),
@@ -140,6 +160,10 @@ export const {
   useInitRecoverAccountMutation,
   useRegisterMutation,
   useVerifyPinMutation,
+  useRefreshTokenMutation,
   useCompleteOnboardingMutation,
   useGetProfileQuery,
+  useGetSubscriptionsQuery,
+  useSelectPlanMutation,
+  useCreateCheckoutSessionsMutation,
 } = neuroapi;

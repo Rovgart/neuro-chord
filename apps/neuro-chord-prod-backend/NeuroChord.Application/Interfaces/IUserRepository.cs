@@ -21,4 +21,6 @@ public interface IUserRepository
     Task ChangeRoleAsync(User user, Role role);
 
     Task<bool> IsEmailAvailable(string email);
+
+    public Task UpdateAsync(User user);
 }

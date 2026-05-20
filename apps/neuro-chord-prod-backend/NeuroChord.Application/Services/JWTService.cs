@@ -40,6 +40,7 @@ public class JwtService : IJwtService
             new(JwtRegisteredClaimNames.Sid, payload.SessionId),
             new("role", payload.Role),
             new("profile_id", payload.ProfileId),
+            new("subscription_plan", payload.SubscriptionPlan), // Dodany claim
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

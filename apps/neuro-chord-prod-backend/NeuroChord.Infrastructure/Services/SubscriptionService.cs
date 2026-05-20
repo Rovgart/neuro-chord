@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NeuroChord.Application.Common;
 using NeuroChord.Application.DTOs;
 using NeuroChord.Application.Exceptions;
 using NeuroChord.Application.Interfaces;
@@ -13,6 +14,7 @@ namespace NeuroChord.Infrastructure.Services;
 
 public class SubscriptionService(
     IUnitOfWork uow,
+    IJwtService jwtService,
     IOptions<StripeSettings> stripeOptions,
     ILogger<SubscriptionService> logger) : ISubscriptionService
 {
@@ -216,5 +218,44 @@ public class SubscriptionService(
                 sub.StripeCustomerId);
             throw new ConflictException("Failed to connect with billing portal");
         }
+    }
+
+    public async Task<SelectPlanResult> SelectInitialPlanAsync(Guid userId, Guid sessionId, string PlanId,
+        string PriceId)
+    {
+        var user = await uow.Users.GetByIdAsync(userId);
+        if (user.Role == Role.Unassigned) user.Role = Role.TeacherPending;
+        if (!Guid.TryParse(PlanId, out var planId))
+            throw new ArgumentException("Identyfikator planu ma niepoprawny format.");
+
+        var freePlanId = Guid.Parse("92ec78ab-31d7-4a07-bbe9-4222ba51c9a2");
+        if (planId == freePlanId)
+        {
+            user.Role = Role.Teacher;
+            user.HasSelectedPlan = true;
+            await uow.Users.UpdateAsync(user);
+            await uow.CommitAsync();
+
+            var payload = new AccessTokenPayload(
+                user.Id.ToString(),
+                user.Email,
+                user.Role.ToString(),
+                sessionId.ToString(),
+                user.Profile.UserId.ToString(),
+                "Freemium"
+            );
+            var accessToken = jwtService.GenerateAccessToken(payload);
+            var refreshToken = jwtService.GenerateRefreshToken();
+
+            return SelectPlanResult.SuccessFree(accessToken, refreshToken);
+        }
+
+        var checkoutUrl = await CreateSubscriptionSessionAsync(userId, PriceId, planId);
+        return SelectPlanResult.RequiresPayment(checkoutUrl);
+    }
+
+    public async Task<IEnumerable<SubscriptionPlan>> GetSubscriptions(CancellationToken cancellationToken = default)
+    {
+        return await uow.Subscriptions.GetSubscriptionPlans(cancellationToken);
     }
 }

@@ -115,7 +115,8 @@ public class ProfileService : IProfileService
             user.Email,
             user.Role.ToString(),
             sessionId.ToString(),
-            user.Profile.UserId.ToString()
+            user.Profile.UserId.ToString(),
+            "None"
         );
         var accessToken = _jwtService.GenerateAccessToken(payload);
 

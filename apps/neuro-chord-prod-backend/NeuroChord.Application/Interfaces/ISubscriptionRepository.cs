@@ -10,4 +10,6 @@ public interface ISubscriptionRepository
     Task AddAsync(Subscriptions subscription);
     Task UpdateAsync(Subscriptions subscription);
     Task<bool> IsInvoiceProcessedAsync(string stripeInvoiceId);
+    Task<string?> GetPlanNameByUserIdAsync(Guid userId);
+    Task<IEnumerable<SubscriptionPlan>> GetSubscriptionPlans(CancellationToken cancellationToken = default);
 }

@@ -144,5 +144,7 @@ public class AppDbContext : DbContext
             .WithMany(s => s.IncomingWebhooks)
             .HasForeignKey(iw => iw.SubscriptionId)
             .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SubscriptionPlan>()
+            .OwnsMany(p => p.Features, builder => { builder.ToJson(); });
     }
 }

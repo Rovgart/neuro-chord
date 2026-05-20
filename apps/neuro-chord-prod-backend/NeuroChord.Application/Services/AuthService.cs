@@ -54,18 +54,30 @@ public class AuthService : IAuthService
             await _sessionService.ArchiveRevokedSessionsAsync(userInternal.Id);
             var session = await _sessionService.CreateSessionAsync(userInternal.Id, ipAddress, userAgent);
 
+            var profileIdString = userInternal.ProfileId?.ToString() ?? string.Empty;
+
+            var currentPlan = "None";
+
+
+            if (userInternal.Role == Role.Teacher && userInternal.HasSelectedPlan)
+            {
+                var planName = await _unitOfWork.Subscriptions.GetPlanNameByUserIdAsync(userInternal.Id);
+                currentPlan = planName ?? "None";
+            }
+
             var payload = new AccessTokenPayload(
                 userInternal.Id.ToString(),
                 userInternal.Email,
-                userInternal.Role,
+                userInternal.Role.ToString(),
                 session.Id.ToString(),
-                userInternal.ProfileId?.ToString() ?? ""
+                profileIdString,
+                currentPlan
             );
+
             var accessToken = _jwtService.GenerateAccessToken(payload);
             var refreshToken = _jwtService.GenerateRefreshToken();
 
             session.RefreshToken = refreshToken;
-
 
             await _unitOfWork.CommitAsync();
 
@@ -73,9 +85,10 @@ public class AuthService : IAuthService
             {
                 Id = userInternal.Id.ToString(),
                 Email = userInternal.Email,
-                Role = userInternal.Role,
+                Role = userInternal.Role.ToString(),
                 IsVerified = userInternal.IsVerified,
-                ProfileId = userInternal.ProfileId.ToString() ?? ""
+                ProfileId = profileIdString,
+                SubscriptionPlanName = currentPlan
             };
 
             return new AuthResponseDto(accessToken, refreshToken, userPublic);
@@ -204,7 +217,8 @@ public class AuthService : IAuthService
                 user.Email,
                 user.Role,
                 principal.FindFirst(JwtRegisteredClaimNames.Sid)?.Value ?? principal.FindFirst(ClaimTypes.Sid)?.Value,
-                user.ProfileId
+                user.ProfileId,
+                user.SubscriptionPlanName
             );
             if (string.IsNullOrEmpty(updatedPayload.UserId) || string.IsNullOrEmpty(updatedPayload.SessionId))
                 throw new UnauthorizedAccessException("Incomplete token claims.");

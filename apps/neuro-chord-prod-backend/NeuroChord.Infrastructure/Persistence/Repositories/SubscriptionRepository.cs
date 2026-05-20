@@ -43,4 +43,20 @@ public class SubscriptionRepository(AppDbContext context) : ISubscriptionReposit
     {
         return await context.Subscriptions.AnyAsync(s => s.LastInvoiceId == stripeInvoiceId);
     }
+
+    public async Task<string?> GetPlanNameByUserIdAsync(Guid userId)
+    {
+        return await context.Subscriptions
+            .Where(s => s.UserId == userId)
+            .Select(s => s.Plan.PlanName)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<IEnumerable<SubscriptionPlan>> GetSubscriptionPlans(CancellationToken cancellationToken = default)
+    {
+        return await context.SubscriptionPlans
+            .AsNoTracking()
+            .Where(p => p.IsActive)
+            .ToListAsync();
+    }
 }

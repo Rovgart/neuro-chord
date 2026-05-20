@@ -69,4 +69,48 @@ public class PaymentController(
         var url = await subscriptionService.CreateCustomerPortalSessionAsync(userId, returnUrl);
         return Ok(url);
     }
+
+    [HttpPost("select-plan")]
+    public async Task<IActionResult> SelectPlan([FromBody] SelectPlanRequestDto request)
+    {
+        var userId = User.GetUserId();
+        var sessionId = User.GetSessionId();
+
+        var result =
+            await subscriptionService.SelectInitialPlanAsync(userId, sessionId, request.PlanId, request.PriceId);
+
+        if (result.IsFreePlan)
+        {
+            SetRefreshTokenCookie(result.RefreshToken);
+            SetAccessTokenCookie(result.NewToken);
+            return Ok(new { isRedirect = false, message = "The plan has been activated correctly" });
+        }
+
+
+        return Ok(new { isRedirect = true, checkoutUrl = result.StripeCheckoutUrl });
+    }
+
+    private void SetRefreshTokenCookie(string refreshToken)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddDays(7)
+        };
+        Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+    }
+
+    private void SetAccessTokenCookie(string accessToken)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddMinutes(15)
+        };
+        Response.Cookies.Append("accessToken", accessToken, cookieOptions);
+    }
 }

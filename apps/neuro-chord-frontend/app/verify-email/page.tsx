@@ -17,18 +17,12 @@ function Page() {
       if (token && !hasRequested.current) {
         hasRequested.current = true;
 
-        // Nie musisz tu dawać try/catch, jeśli jedyne co robisz w catch to logowanie błędu.
-        // Middleware i tak wyświetli toast.
         await verifyEmail(token)
           .unwrap()
           .then(() => {
-            // To wykona się TYLKO przy sukcesie
             setTimeout(() => router.push('/sign-in'), 3000);
           })
-          .catch(() => {
-            // Pusty catch wystarczy, żeby uniknąć "Uncaught in promise" w konsoli.
-            // Middleware zajmie się resztą.
-          });
+          .catch(() => {});
       }
     };
 

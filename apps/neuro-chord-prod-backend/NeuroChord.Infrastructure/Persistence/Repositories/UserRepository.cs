@@ -60,9 +60,18 @@ public class UserRepository : IUserRepository
                 Id = u.Id,
                 Email = u.Email,
                 PasswordHash = u.PasswordHash,
-                Role = u.Role.ToString(),
+                Role = u.Role,
                 IsVerified = u.IsVerified,
-                ProfileId = u.Profile != null ? u.Id : null
+                ProfileId = u.Profile != null ? u.Id : null,
+                HasSelectedPlan = u.HasSelectedPlan,
+
+
+                SubscriptionPlanName = u.HasSelectedPlan
+                    ? _context.Subscriptions
+                        .Where(s => s.UserId == u.Id)
+                        .Select(s => s.Plan.PlanName)
+                        .FirstOrDefault() ?? "None"
+                    : "None"
             })
             .FirstOrDefaultAsync();
     }
@@ -89,5 +98,13 @@ public class UserRepository : IUserRepository
     public async Task<bool> IsEmailAvailable(string email)
     {
         return await _context.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower());
+    }
+
+
+    public Task UpdateAsync(User user)
+    {
+        _context.Users.Update(user);
+
+        return Task.CompletedTask;
     }
 }

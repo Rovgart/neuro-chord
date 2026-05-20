@@ -5,5 +5,6 @@ public record AccessTokenPayload(
     string Email,
     string Role,
     string SessionId,
-    string ProfileId
+    string ProfileId,
+    string SubscriptionPlan // Nowe pole
 );

@@ -79,10 +79,26 @@ public class UserService : IUserService
 
     public async Task<UserDto> GetUserById(Guid id)
     {
+        // 1. Pobieramy użytkownika z relacjami (Twój obecny kod)
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null) throw new NotFoundException($"User with id {id} not found");
 
-        return MapToDto(user);
+        // 2. Mapujemy encję na podstawowe DTO
+        var dto = MapToDto(user);
+
+        // 3. Jeśli to Nauczyciel, który przeszedł onboarding, wyciągamy jego plan ze Stripe
+        if (user.Role == Role.Teacher && user.HasSelectedPlan)
+        {
+            var planName = await _unitOfWork.Subscriptions.GetPlanNameByUserIdAsync(id);
+
+            dto.SubscriptionPlanName = planName ?? "None";
+        }
+        else
+        {
+            dto.SubscriptionPlanName = "None";
+        }
+
+        return dto;
     }
 
     public async Task<UserDto> UpdateUserRoleAsync(Guid id, Role role)

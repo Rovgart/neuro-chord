@@ -21,6 +21,7 @@ public class CheckoutSessionCompletedStrategy(IUnitOfWork uow) : IWebhookStrateg
         var planIdString = session.Metadata.GetValueOrDefault("PlanId");
         if (!Guid.TryParse(userIdString, out var userId) || !Guid.TryParse(planIdString, out var planId))
             return;
+        var user = await uow.Users.GetByIdAsync(userId);
         var existingSub = await uow.Subscriptions.GetByUserIdAsync(userId);
         if (existingSub == null)
         {
@@ -47,6 +48,13 @@ public class CheckoutSessionCompletedStrategy(IUnitOfWork uow) : IWebhookStrateg
 
             await uow.Subscriptions.UpdateAsync(existingSub);
         }
+
+        user.Role = Role.Teacher;
+        user.HasSelectedPlan = true;
+        user.RegistrationStep = RegistrationStep.ProfileCompleted;
+
+        await uow.Users.UpdateAsync(user);
+
 
         await uow.CommitAsync();
     }

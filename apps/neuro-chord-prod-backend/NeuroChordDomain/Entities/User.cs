@@ -15,6 +15,8 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public bool IsVerified { get; set; } = false;
+
+    public bool HasSelectedPlan { get; set; } = false;
     public RegistrationStep RegistrationStep { get; set; } = RegistrationStep.AccountCreated;
     public virtual ICollection<Verification> Verifications { get; set; } = new List<Verification>();
     public virtual ICollection<Session> Sessions { get; set; } = new List<Session>();
