@@ -1,11 +1,11 @@
 import z from 'zod';
 
-// Definicja enuma zgodna z NeuroChordDomain.Enums.Role
 export enum UserRole {
   Student = 'Student',
   Teacher = 'Teacher',
+  TeacherPending = 'TeacherPending',
 }
-const ROLES = [UserRole.Student, UserRole.Teacher] as const;
+const ROLES = [UserRole.Student, UserRole.Teacher, UserRole.TeacherPending] as const;
 export const OnboardingDto = z.object({
   displayName: z
     .string()

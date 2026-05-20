@@ -98,7 +98,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
     options.AddPolicy("TeacherOnly", policy => policy.RequireRole("Teacher"));
     options.AddPolicy("VerifiedUser", policy => policy.RequireClaim("is_verified", "true"));
-    options.AddPolicy("AtLeastStudent", policy => policy.RequireRole("Student", "Teacher", "Admin"));
+    options.AddPolicy("AtLeastStudent", policy => policy.RequireRole("Student", "Teacher", "TeacherPending", "Admin"));
 });
 var redisPassword = builder.Configuration["REDIS_PASSWORD"] ?? builder.Configuration["Redis:Password"];
 var redisConnection = $"127.0.0.1:6379,password={redisPassword}";

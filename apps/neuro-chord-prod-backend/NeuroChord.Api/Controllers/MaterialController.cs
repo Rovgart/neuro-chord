@@ -37,7 +37,7 @@ public class MaterialController(IMaterialService materialService) : ControllerBa
 
     [HttpPost]
     [Consumes("multipart/form-data")]
-    [Authorize(Policy = "Teacher")]
+    [Authorize(Policy = "TeacherOnly")]
     public async Task<ActionResult<MaterialResponseDto>> CreateMaterialAsync([FromForm] CreateMaterialDto dto)
     {
         var userId = User.GetUserId();

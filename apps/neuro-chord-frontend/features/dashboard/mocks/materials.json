@@ -1,0 +1,38 @@
+[
+  {
+    "id": "1",
+    "topic": "Wprowadzenie do teorii muzyki",
+    "url": "https://example.com/theory-1.pdf",
+    "type": "File",
+    "isPublic": true,
+    "requiresSubscription": false,
+    "createdAt": "2026-05-01T10:00:00.000Z"
+  },
+  {
+    "id": "2",
+    "topic": "Techniki szybkiego kostkowania",
+    "url": "https://example.com/video-shred",
+    "type": "Video",
+    "isPublic": true,
+    "requiresSubscription": true,
+    "createdAt": "2026-05-03T12:00:00.000Z"
+  },
+  {
+    "id": "3",
+    "topic": "Zasady kontrapunktu - linki",
+    "url": "https://example.com/links",
+    "type": "Link",
+    "isPublic": false,
+    "requiresSubscription": true,
+    "createdAt": "2026-05-05T15:30:00.000Z"
+  },
+  {
+    "id": "4",
+    "topic": "Test wiedzy: Interwały",
+    "url": "https://example.com/quiz-1",
+    "type": "Quiz",
+    "isPublic": true,
+    "requiresSubscription": false,
+    "createdAt": "2026-05-07T09:15:00.000Z"
+  }
+]

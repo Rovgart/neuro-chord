@@ -17,6 +17,9 @@ public class ProfileRepository : IProfileRepository
     {
         return await _context.Profiles
             .Include(p => p.User)
+            .ThenInclude(u => u.StudentProfile) // Wyciąga dane z tabeli StudentProfiles
+            .Include(p => p.User)
+            .ThenInclude(u => u.TeacherProfile) // Wyciąga dane z tabeli TeacherProfiles
             .FirstOrDefaultAsync(p => p.UserId == userId);
     }
 
